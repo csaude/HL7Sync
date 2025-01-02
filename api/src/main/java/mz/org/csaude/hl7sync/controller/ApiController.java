@@ -1,19 +1,16 @@
 package mz.org.csaude.hl7sync.controller;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
-
-    @PostMapping("/demographics/generate")
-    public void createHL7Request(@RequestParam String locationUUID) {
-        LOG.info("locationUUID: {}", locationUUID);
+    @GetMapping("/demographics/generate")
+    public void demographics(){
+        System.out.println("I work");
     }
 }
