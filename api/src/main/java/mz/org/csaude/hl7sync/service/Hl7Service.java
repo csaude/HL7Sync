@@ -6,6 +6,7 @@ import mz.org.csaude.hl7sync.model.HL7FileRequest;
 import mz.org.csaude.hl7sync.model.PatientDemographic;
 import mz.org.csaude.hl7sync.model.ProcessingResult;
 
+import ca.uhn.hl7v2.HL7Exception;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 

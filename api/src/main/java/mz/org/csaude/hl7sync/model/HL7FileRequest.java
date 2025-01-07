@@ -1,9 +1,10 @@
 package mz.org.csaude.hl7sync.model;
 
-import lombok.Data;
-
 import java.io.Serializable;
 import java.util.List;
+import mz.org.csaude.hl7sync.model.Location;
+
+import lombok.Data;
 
 @Data
 public class HL7FileRequest implements Serializable {
@@ -15,4 +16,5 @@ public class HL7FileRequest implements Serializable {
     private Location district;
 
     private List<Location> healthFacilities;
+
 }
