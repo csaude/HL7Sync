@@ -1,6 +1,7 @@
 package mz.org.csaude.hl7sync.controller;
 
 import ca.uhn.hl7v2.HL7Exception;
+import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
 import mz.org.csaude.hl7sync.model.HL7FileRequest;
 import mz.org.csaude.hl7sync.model.Location;
 import mz.org.csaude.hl7sync.model.PatientDemographic;
@@ -9,6 +10,7 @@ import mz.org.csaude.hl7sync.service.LocationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -23,12 +25,13 @@ public class ApiController {
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
 
     private Hl7Service hl7Service;
-    private HL7FileGeneratorDao hl7FileGeneratorDao
+    private HL7FileGeneratorDao hl7FileGeneratorDao;
     private LocationService locationService;
 
-    public ApiController(Hl7Service hl7Service, LocationService locationService) {
+    public ApiController(Hl7Service hl7Service, LocationService locationService, HL7FileGeneratorDao hl7FileGeneratorDao) {
         this.hl7Service = hl7Service;
         this.locationService = locationService;
+        this.hl7FileGeneratorDao = hl7FileGeneratorDao;
     }
 
     @PostMapping("/demographics/generate")
