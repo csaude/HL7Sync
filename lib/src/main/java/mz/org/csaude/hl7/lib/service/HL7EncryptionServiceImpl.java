@@ -1,5 +1,7 @@
 package mz.org.csaude.hl7.lib.service;
 
+import org.springframework.stereotype.Service;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,6 +13,7 @@ import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Service
 public class HL7EncryptionServiceImpl implements HL7EncryptionService {
 
     private static final Logger logger = Logger.getLogger(HL7EncryptionServiceImpl.class.getName());
