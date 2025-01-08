@@ -43,18 +43,12 @@ public class ApiController {
         req.setDistrict(province.getChildLocations().get(0));
         req.setHealthFacilities(province.getChildLocations());
 
-        List<String> locationsByUuid = req.getHealthFacilities().stream()
-                .map(Location::getUuid)
-                .collect(Collectors.toList());
-
-        List<PatientDemographic> patientDemographics = hl7FileGeneratorDao.getPatientDemographicData(locationsByUuid);
-        LOG.info("Query executed successfully");
+        hl7Service.generateHl7File(req);
 
         // Prepare the response
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
-        response.put("message", "HL7 file request generated successfully");
-        response.put("patientDemographics", patientDemographics);
+        response.put("message", "HL7 file generated successfully");
 
         // Return a 200 OK status with the response body
         return ResponseEntity.ok(response);
