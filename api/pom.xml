@@ -102,13 +102,6 @@
 			<groupId>jakarta.validation</groupId>
 			<artifactId>jakarta.validation-api</artifactId>
 		</dependency>
-
-		<dependency>
-			<groupId>mz.org.csaude.hl7</groupId>
-			<artifactId>lib</artifactId>
-			<version>1.9.1-SNAPSHOT</version>
-			<scope>compile</scope>
-		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
