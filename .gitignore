@@ -32,8 +32,15 @@ build/
 ### VS Code ###
 .vscode/
 
-*.env
-/*.xlsx
-*.xlsx#
+id_file
 
 .java-version
+
+**/node/
+**/node_modules
+**/resources/**/built
+
+*.war
+webapps/
+
+*.hl7
