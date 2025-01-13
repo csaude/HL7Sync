@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -36,6 +37,9 @@ public class ApiController {
 
     @PostMapping("/demographics/generate")
     public ResponseEntity<?> createHL7Request(@RequestParam String locationUUID) throws HL7Exception, IOException {
+        // Generate a unique job ID
+        String jobId = UUID.randomUUID().toString();
+
         HL7FileRequest req = new HL7FileRequest();
 
         Location province = locationService.findByUuid(locationUUID);
@@ -47,8 +51,8 @@ public class ApiController {
 
         // Prepare the response
         Map<String, Object> response = new HashMap<>();
-        response.put("status", "success");
-        response.put("message", "HL7 file generated successfully");
+        response.put("status", "Processing");
+        response.put("message", "HL7 file is being generated. JobID:" + jobId);
 
         // Return a 200 OK status with the response body
         return ResponseEntity.ok(response);
