@@ -163,6 +163,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 					"Previous HL7 file generation is not yet done. Cancel it if you want to start a new one.");
 		}
 
+
 		Path filePath = Paths.get(hl7FolderName).resolve(hl7FileName + HL7_EXTENSION);
 
 		try {
