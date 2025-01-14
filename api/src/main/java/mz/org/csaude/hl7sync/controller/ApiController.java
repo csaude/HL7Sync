@@ -2,7 +2,9 @@ package mz.org.csaude.hl7sync.controller;
 
 import ca.uhn.hl7v2.HL7Exception;
 import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.dao.JobRepositoryDao;
 import mz.org.csaude.hl7sync.model.HL7FileRequest;
+import mz.org.csaude.hl7sync.model.Job;
 import mz.org.csaude.hl7sync.model.Location;
 import mz.org.csaude.hl7sync.model.PatientDemographic;
 import mz.org.csaude.hl7sync.service.Hl7Service;
@@ -14,10 +16,8 @@ import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -29,16 +29,42 @@ public class ApiController {
     private HL7FileGeneratorDao hl7FileGeneratorDao;
     private LocationService locationService;
 
-    public ApiController(Hl7Service hl7Service, LocationService locationService, HL7FileGeneratorDao hl7FileGeneratorDao) {
+    private JobRepositoryDao jobRepositoryDao;
+
+    public ApiController(Hl7Service hl7Service, LocationService locationService, HL7FileGeneratorDao hl7FileGeneratorDao, JobRepositoryDao jobRepositoryDao) {
         this.hl7Service = hl7Service;
         this.locationService = locationService;
         this.hl7FileGeneratorDao = hl7FileGeneratorDao;
+        this.jobRepositoryDao = jobRepositoryDao;
     }
 
     @PostMapping("/demographics/generate")
     public ResponseEntity<?> createHL7Request(@RequestParam String locationUUID) throws HL7Exception, IOException {
-        // Generate a unique job ID
+
+        // Check if there's an ongoing job for this location
+
+        Optional<Job> existingJob = jobRepositoryDao.findByLocationUUIDAndStatusIn(
+                locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
+        );
+
+        if (existingJob.isPresent()) {
+            // Return existing job ID if a job is in progress
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "Processing");
+            response.put("message", "Job already in progress. JobID: " + existingJob.get().getJobId());
+            return ResponseEntity.ok(response);
+        }
+
+
+        // Create a new job
         String jobId = UUID.randomUUID().toString();
+        Job newJob = new Job();
+        newJob.setJobId(jobId);
+        newJob.setLocationUUID(locationUUID);
+        newJob.setStatus(Job.JobStatus.QUEUED);
+        newJob.setCreatedAt(LocalDateTime.now());
+        newJob.setUpdatedAt(LocalDateTime.now());
+        jobRepositoryDao.save(newJob);
 
         HL7FileRequest req = new HL7FileRequest();
 
