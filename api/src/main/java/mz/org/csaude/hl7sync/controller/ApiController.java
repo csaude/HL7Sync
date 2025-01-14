@@ -1,24 +1,21 @@
 package mz.org.csaude.hl7sync.controller;
 
 import ca.uhn.hl7v2.HL7Exception;
-import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
-import mz.org.csaude.hl7sync.dao.JobRepositoryDao;
+import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
 import mz.org.csaude.hl7sync.model.HL7FileRequest;
 import mz.org.csaude.hl7sync.model.Job;
 import mz.org.csaude.hl7sync.model.Location;
-import mz.org.csaude.hl7sync.model.PatientDemographic;
 import mz.org.csaude.hl7sync.service.Hl7Service;
 import mz.org.csaude.hl7sync.service.LocationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")

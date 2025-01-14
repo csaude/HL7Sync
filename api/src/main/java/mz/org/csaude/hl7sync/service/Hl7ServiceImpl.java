@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
 import mz.org.csaude.hl7sync.AppException;
 import mz.org.csaude.hl7sync.ProcessingException;
-import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
 import mz.org.csaude.hl7sync.generator.AdtMessageFactory;
 import mz.org.csaude.hl7sync.model.HL7File;
 import mz.org.csaude.hl7sync.model.HL7FileRequest;

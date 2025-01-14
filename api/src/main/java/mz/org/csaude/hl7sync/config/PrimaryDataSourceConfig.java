@@ -1,7 +1,7 @@
 package mz.org.csaude.hl7sync.config;
 
 import jakarta.persistence.EntityManagerFactory;
-import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -19,7 +19,7 @@ import javax.sql.DataSource;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = "mz.org.csaude.hl7sync.dao",
+        basePackages = "mz.org.csaude.hl7sync.dao.jobrepository",
         entityManagerFactoryRef = "entityManagerFactory",
         transactionManagerRef = "transactionManager")
 public class PrimaryDataSourceConfig {
