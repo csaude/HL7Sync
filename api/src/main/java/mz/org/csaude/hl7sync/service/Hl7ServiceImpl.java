@@ -15,12 +15,9 @@ import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
 import mz.org.csaude.hl7sync.AppException;
 import mz.org.csaude.hl7sync.ProcessingException;
 import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
 import mz.org.csaude.hl7sync.generator.AdtMessageFactory;
-import mz.org.csaude.hl7sync.model.HL7File;
-import mz.org.csaude.hl7sync.model.HL7FileRequest;
-import mz.org.csaude.hl7sync.model.PatientDemographic;
-import mz.org.csaude.hl7sync.model.ProcessingResult;
-import mz.org.csaude.hl7sync.model.Location;
+import mz.org.csaude.hl7sync.model.*;
 import mz.org.csaude.hl7sync.util.Hl7Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +60,8 @@ public class Hl7ServiceImpl implements Hl7Service {
 
 	private HL7FileGeneratorDao hl7FileGeneratorDao;
 
+	private JobRepositoryDao jobRepositoryDao;
+
 	private ObjectMapper objectMapper;
 
 	private CompletableFuture<ProcessingResult> processingResult;
@@ -80,6 +79,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 	public Hl7ServiceImpl(
 			HL7EncryptionService encryptionService,
 			HL7FileGeneratorDao hl7FileGeneratorDao,
+			JobRepositoryDao jobRepositoryDao,
 			ObjectMapper objectMapper,
 			@Value("${app.hl7.folder}") String hl7FolderName,
 			@Value("${app.hl7.filename}") String fileName,
@@ -87,6 +87,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 			@Value("${app.disa.secretKey}") String passPhrase) {
 
 		this.encryptionService = encryptionService;
+		this.jobRepositoryDao = jobRepositoryDao;
 		this.objectMapper = objectMapper;
 		this.hl7FileGeneratorDao = hl7FileGeneratorDao;
 		this.hl7FolderName = hl7FolderName;
@@ -156,7 +157,15 @@ public class Hl7ServiceImpl implements Hl7Service {
 
 	@Async
 	@Override
-	public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest hl7FileRequest) {
+	public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest hl7FileRequest, String jobId) {
+
+		Job job = jobRepositoryDao.findByJobId(jobId)
+				.orElseThrow(() -> new IllegalStateException("Job not found for jobId: " + jobId));
+
+		// Update status to PROCESSING
+		job.setStatus(Job.JobStatus.PROCESSING);
+		job.setUpdatedAt(LocalDateTime.now());
+		jobRepositoryDao.save(job);
 
 		if (processingResult != null && !processingResult.isDone()) {
 			throw new AppException(
@@ -164,7 +173,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 		}
 
 
-		Path filePath = Paths.get(hl7FolderName).resolve(hl7FileName + HL7_EXTENSION);
+		Path filePath = Paths.get(hl7FolderName).resolve(hl7FileName+ jobId + HL7_EXTENSION);
 
 		try {
 
@@ -191,7 +200,16 @@ public class Hl7ServiceImpl implements Hl7Service {
 			// Set this as the previous successfuly generated HL7 file
 			previousProcessingResult = result;
 
+			// Update status to COMPLETED
+			job.setStatus(Job.JobStatus.COMPLETED);
+			job.setUpdatedAt(LocalDateTime.now());
+			jobRepositoryDao.save(job);
+
 		} catch (IOException | RuntimeException e) {
+			// Handle exceptions and update status to FAILED
+			job.setStatus(Job.JobStatus.FAILED);
+			job.setUpdatedAt(LocalDateTime.now());
+			jobRepositoryDao.save(job);
 
 			log.error("Error creating hl7", e);
 

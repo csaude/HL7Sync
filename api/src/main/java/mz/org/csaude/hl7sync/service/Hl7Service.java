@@ -16,7 +16,7 @@ public interface Hl7Service {
      * @return The generated HL7 file.
      * @throws HL7Exception
      */
-    public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest fileRequest);
+    public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest fileRequest, String jobId);
 
     /**
      * @return The generated HL7 file, could be processing.
