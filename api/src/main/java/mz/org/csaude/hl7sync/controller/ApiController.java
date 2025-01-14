@@ -39,7 +39,6 @@ public class ApiController {
     public ResponseEntity<?> createHL7Request(@RequestParam String locationUUID) throws HL7Exception, IOException {
 
         // Check if there's an ongoing job for this location
-
         Optional<Job> existingJob = jobRepositoryDao.findByLocationUUIDAndStatusIn(
                 locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
         );
@@ -51,7 +50,6 @@ public class ApiController {
             response.put("message", "Job already in progress. JobID: " + existingJob.get().getJobId());
             return ResponseEntity.ok(response);
         }
-
 
         // Create a new job
         String jobId = UUID.randomUUID().toString();
@@ -70,7 +68,7 @@ public class ApiController {
         req.setDistrict(province.getChildLocations().get(0));
         req.setHealthFacilities(province.getChildLocations());
 
-        hl7Service.generateHl7File(req);
+        hl7Service.generateHl7File(req, jobId);
 
         // Prepare the response
         Map<String, Object> response = new HashMap<>();

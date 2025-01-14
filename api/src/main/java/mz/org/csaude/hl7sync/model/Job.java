@@ -17,7 +17,7 @@ public class Job {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "job_id", unique = true, nullable = false)
     private String jobId;
 
     @Column(nullable = false)
@@ -27,10 +27,10 @@ public class Job {
     @Column(nullable = false)
     private JobStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
 }
