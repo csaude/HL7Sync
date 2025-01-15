@@ -10,32 +10,43 @@ import mz.org.csaude.hl7sync.service.Hl7Service;
 import mz.org.csaude.hl7sync.service.LocationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/demographics/")
 public class ApiController {
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
-
+    private static final String HL7_EXTENSION = ".hl7.enc";
     private Hl7Service hl7Service;
     private HL7FileGeneratorDao hl7FileGeneratorDao;
     private LocationService locationService;
-
     private JobRepositoryDao jobRepositoryDao;
+    private String hl7FolderName;
+    private String hl7FileName;
 
-    public ApiController(Hl7Service hl7Service, LocationService locationService, HL7FileGeneratorDao hl7FileGeneratorDao, JobRepositoryDao jobRepositoryDao) {
+    public ApiController(Hl7Service hl7Service, LocationService locationService, HL7FileGeneratorDao hl7FileGeneratorDao, JobRepositoryDao jobRepositoryDao, @Value("${app.hl7.folder}") String hl7FolderName,
+                         @Value("${app.hl7.filename}") String fileName) {
         this.hl7Service = hl7Service;
         this.locationService = locationService;
         this.hl7FileGeneratorDao = hl7FileGeneratorDao;
         this.jobRepositoryDao = jobRepositoryDao;
+        this.hl7FolderName = hl7FolderName;
+        this.hl7FileName = fileName;
     }
 
-    @PostMapping("/demographics/generate")
+    @PostMapping("/generate")
     public ResponseEntity<?> createHL7Request(@RequestParam String locationUUID) throws HL7Exception, IOException {
 
         // Check if there's an ongoing job for this location
@@ -73,9 +84,37 @@ public class ApiController {
         // Prepare the response
         Map<String, Object> response = new HashMap<>();
         response.put("status", "Processing");
-        response.put("message", "HL7 file is being generated. JobID:" + jobId);
+        response.put("message", "HL7 file is being generated");
+        response.put("JobId", jobId);
 
         // Return a 200 OK status with the response body
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/download/{jobId}")
+    public ResponseEntity<?> downloadHl7File(@PathVariable String jobId) {
+        // Validate the job
+        Optional<Job> jobOptional = jobRepositoryDao.findByJobId(jobId);
+        if (jobOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Retrieve the file
+        Path filePath = Paths.get(hl7FolderName).resolve(hl7FileName + jobId + HL7_EXTENSION);
+
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Serve the file as a downloadable resource
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + resource.getFilename())
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error retrieving the file: " + e.getMessage());
+        }
+    }
+
 }
