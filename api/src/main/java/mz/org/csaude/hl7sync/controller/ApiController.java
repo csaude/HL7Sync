@@ -72,6 +72,8 @@ public class ApiController {
         newJob.setUpdatedAt(LocalDateTime.now());
         jobRepositoryDao.save(newJob);
 
+        LOG.info(jobId);
+
         HL7FileRequest req = new HL7FileRequest();
 
         Location province = locationService.findByUuid(locationUUID);
@@ -97,6 +99,11 @@ public class ApiController {
         Optional<Job> jobOptional = jobRepositoryDao.findByJobId(jobId);
         if (jobOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+
+        Job job = jobOptional.get();
+        if (!job.getStatus().equals(Job.JobStatus.COMPLETED)) {
+            return ResponseEntity.badRequest().body("The job is still being processed!");
         }
 
         // Retrieve the file
