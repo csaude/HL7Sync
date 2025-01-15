@@ -7,10 +7,12 @@ import mz.org.csaude.hl7sync.model.HL7FileRequest;
 import mz.org.csaude.hl7sync.model.Job;
 import mz.org.csaude.hl7sync.model.Location;
 import mz.org.csaude.hl7sync.service.Hl7Service;
+import mz.org.csaude.hl7sync.service.JobService;
 import mz.org.csaude.hl7sync.service.LocationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,16 +34,16 @@ public class ApiController {
     private Hl7Service hl7Service;
     private HL7FileGeneratorDao hl7FileGeneratorDao;
     private LocationService locationService;
-    private JobRepositoryDao jobRepositoryDao;
+    private final JobService jobService;
     private String hl7FolderName;
     private String hl7FileName;
 
-    public ApiController(Hl7Service hl7Service, LocationService locationService, HL7FileGeneratorDao hl7FileGeneratorDao, JobRepositoryDao jobRepositoryDao, @Value("${app.hl7.folder}") String hl7FolderName,
+    public ApiController(Hl7Service hl7Service, LocationService locationService, HL7FileGeneratorDao hl7FileGeneratorDao, JobService jobService, @Value("${app.hl7.folder}") String hl7FolderName,
                          @Value("${app.hl7.filename}") String fileName) {
         this.hl7Service = hl7Service;
         this.locationService = locationService;
         this.hl7FileGeneratorDao = hl7FileGeneratorDao;
-        this.jobRepositoryDao = jobRepositoryDao;
+        this.jobService = jobService;
         this.hl7FolderName = hl7FolderName;
         this.hl7FileName = fileName;
     }
@@ -50,7 +52,7 @@ public class ApiController {
     public ResponseEntity<?> createHL7Request(@RequestParam String locationUUID) throws HL7Exception, IOException {
 
         // Check if there's an ongoing job for this location
-        Optional<Job> existingJob = jobRepositoryDao.findByLocationUUIDAndStatusIn(
+        Optional<Job> existingJob = jobService.findByLocationUUIDAndStatuses(
                 locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
         );
 
@@ -70,7 +72,7 @@ public class ApiController {
         newJob.setStatus(Job.JobStatus.QUEUED);
         newJob.setCreatedAt(LocalDateTime.now());
         newJob.setUpdatedAt(LocalDateTime.now());
-        jobRepositoryDao.save(newJob);
+        jobService.save(newJob);
 
         LOG.info(jobId);
 
@@ -96,7 +98,7 @@ public class ApiController {
     @GetMapping("/download/{jobId}")
     public ResponseEntity<?> downloadHl7File(@PathVariable String jobId) {
         // Validate the job
-        Optional<Job> jobOptional = jobRepositoryDao.findByJobId(jobId);
+        Optional<Job> jobOptional = jobService.findJobById(jobId);
         if (jobOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -123,5 +125,17 @@ public class ApiController {
             return ResponseEntity.internalServerError().body("Error retrieving the file: " + e.getMessage());
         }
     }
+
+
+    @GetMapping("/status/{jobId}")
+    public ResponseEntity<String> getJobStatus(@PathVariable String jobId) {
+        Optional<Job> job = jobService.findJobById(jobId);
+        if (job.isPresent()) {
+            return ResponseEntity.ok(job.get().getStatus().toString());
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Job not found");
+        }
+    }
+
 
 }
