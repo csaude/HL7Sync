@@ -110,32 +110,34 @@ public class Hl7ServiceImpl implements Hl7Service {
 			}
 		}
 
-		// Check if there is a previous processing file
-		Path processing = Paths.get(path.toString(), PROCESSING_PREFIX + hl7FileName + HL7_EXTENSION);
-		Path done = Paths.get(path.toString(), hl7FileName + HL7_EXTENSION);
-		// If there is a previously processed file, delete the temporary file because
-		// the previous execution did not finish.
-		if (Files.exists(done)) {
-			// load serialized HL7File
-			HL7File hl7File = new HL7File();
-			Path serializePath = Paths.get(hl7FolderName, METADATA_JSON);
-			if (Files.exists(serializePath)) {
-				hl7File = objectMapper.readValue(Files.newInputStream(serializePath), HL7File.class);
-			} else {
-				hl7File.setLastModifiedTime(getFileLastModifiedTime());
-			}
-			ProcessingResult result = new ProcessingResult();
-			result.setHl7File(hl7File);
-			result.setErrorLogs(Collections.emptyList());
-			processingResult = CompletableFuture.completedFuture(result);
-			previousProcessingResult = result;
-			if (Files.exists(processing))
-				Files.delete(processing);
-		} else if (Files.exists(processing)) {
-			Files.delete(processing);
-			processingResult = new CompletableFuture<>();
-			processingResult.completeExceptionally(new AppException("Previous HL7 file generation did not finish."));
-		}
+
+		//TODO - Implement logic to handle deletion of files
+//		// Check if there is a previous processing file
+//		Path processing = Paths.get(path.toString(), PROCESSING_PREFIX + hl7FileName + HL7_EXTENSION);
+//		Path done = Paths.get(path.toString(), hl7FileName + HL7_EXTENSION);
+//		// If there is a previously processed file, delete the temporary file because
+//		// the previous execution did not finish.
+//		if (Files.exists(done)) {
+//			// load serialized HL7File
+//			HL7File hl7File = new HL7File();
+//			Path serializePath = Paths.get(hl7FolderName, METADATA_JSON);
+//			if (Files.exists(serializePath)) {
+//				hl7File = objectMapper.readValue(Files.newInputStream(serializePath), HL7File.class);
+//			} else {
+//				hl7File.setLastModifiedTime(getFileLastModifiedTime());
+//			}
+//			ProcessingResult result = new ProcessingResult();
+//			result.setHl7File(hl7File);
+//			result.setErrorLogs(Collections.emptyList());
+//			processingResult = CompletableFuture.completedFuture(result);
+//			previousProcessingResult = result;
+//			if (Files.exists(processing))
+//				Files.delete(processing);
+//		} else if (Files.exists(processing)) {
+//			Files.delete(processing);
+//			processingResult = new CompletableFuture<>();
+//			processingResult.completeExceptionally(new AppException("Previous HL7 file generation did not finish."));
+//		}
 	}
 
 	@Override
@@ -185,7 +187,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 			hl7File.setProvince(hl7FileRequest.getProvince());
 			hl7File.setDistrict(hl7FileRequest.getDistrict());
 			hl7File.setHealthFacilities(hl7FileRequest.getHealthFacilities());
-			hl7File.setLastModifiedTime(getFileLastModifiedTime());
+			hl7File.setLastModifiedTime(getFileLastModifiedTime(jobId));
 
 			// Serialize the HL7File object
 			Path serializePath = Paths.get(hl7FolderName, METADATA_JSON);
@@ -205,10 +207,15 @@ public class Hl7ServiceImpl implements Hl7Service {
 			job.setUpdatedAt(LocalDateTime.now());
 			jobRepositoryDao.save(job);
 
+			if (true) {
+				throw new IOException("Simulated IOException for testing");
+			}
+
 		} catch (IOException | RuntimeException e) {
 			// Handle exceptions and update status to FAILED
 			job.setStatus(Job.JobStatus.FAILED);
 			job.setUpdatedAt(LocalDateTime.now());
+			job.setErrorDetails(e.getMessage());
 			jobRepositoryDao.save(job);
 
 			log.error("Error creating hl7", e);
@@ -376,9 +383,9 @@ public class Hl7ServiceImpl implements Hl7Service {
 		return errorLogs;
 	}
 
-	private LocalDateTime getFileLastModifiedTime() {
+	private LocalDateTime getFileLastModifiedTime(String jobId) {
 		try {
-			Path path = Paths.get(hl7FolderName, hl7FileName + HL7_EXTENSION);
+			Path path = Paths.get(hl7FolderName, hl7FileName + jobId + HL7_EXTENSION);
 			BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
 			return attrs.lastModifiedTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 		} catch (IOException e) {
