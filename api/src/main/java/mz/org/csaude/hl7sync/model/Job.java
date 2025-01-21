@@ -33,5 +33,8 @@ public class Job {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "error_details", nullable = true)
+    private String errorDetails; // New field for storing error details
+
 }
 

@@ -49,9 +49,8 @@ public class ApiController {
         this.hl7FileName = fileName;
     }
 
-    @PostMapping("/generate")
-    public ResponseEntity<?> createHL7Request(@RequestParam String locationUUID) throws HL7Exception, IOException {
-
+    @PostMapping("/generate/{locationUUID}")
+    public ResponseEntity<?> createHL7Request(@PathVariable String locationUUID) throws HL7Exception, IOException {
         // Check if there's an ongoing job for this location
         Optional<Job> existingJob = jobService.findByLocationUUIDAndStatuses(
                 locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
@@ -65,6 +64,22 @@ public class ApiController {
             return ResponseEntity.ok(response);
         }
 
+        //Check if the locationUUID provided exists
+        Location province = locationService.findByUuid(locationUUID);
+        if (province == null) {
+            // Return an error message
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "Location not found");
+            response.put("message", "Unable to find the provided locationUUID");
+            return ResponseEntity.ok(response);
+        }
+
+        // Create a new HL7 File Request
+        HL7FileRequest req = new HL7FileRequest();
+        req.setProvince(province);
+        req.setDistrict(province.getChildLocations().get(0));
+        req.setHealthFacilities(province.getChildLocations());
+
         // Create a new job
         String jobId = UUID.randomUUID().toString();
         Job newJob = new Job();
@@ -74,15 +89,7 @@ public class ApiController {
         newJob.setCreatedAt(LocalDateTime.now());
         newJob.setUpdatedAt(LocalDateTime.now());
         jobService.save(newJob);
-
         LOG.info(jobId);
-
-        HL7FileRequest req = new HL7FileRequest();
-
-        Location province = locationService.findByUuid(locationUUID);
-        req.setProvince(province);
-        req.setDistrict(province.getChildLocations().get(0));
-        req.setHealthFacilities(province.getChildLocations());
 
         hl7Service.generateHl7File(req, jobId);
 
@@ -130,10 +137,26 @@ public class ApiController {
 
 
     @GetMapping("/status/{jobId}")
-    public ResponseEntity<String> getJobStatus(@PathVariable String jobId) {
+    public ResponseEntity<?> getJobStatus(@PathVariable String jobId) {
         Optional<Job> job = jobService.findJobById(jobId);
         if (job.isPresent()) {
-            return ResponseEntity.ok(job.get().getStatus().toString());
+            Job foundJob = job.get();
+            Map<String, Object> response = new HashMap<>();
+            response.put("jobId", foundJob.getJobId());
+            response.put("status", foundJob.getStatus());
+            response.put("updatedAt", foundJob.getUpdatedAt());
+
+            // Explicitly handle JobStatus in the switch statement and return the corresponding message
+            String message = switch (foundJob.getStatus()) {
+                case QUEUED -> "Job is queued for processing.";
+                case PROCESSING -> "Job is currently being processed.";
+                case COMPLETED -> "Job completed successfully.";
+                case FAILED -> "Job failed. " + foundJob.getErrorDetails();
+                default -> "Unknown job status";  // Fallback for unhandled status
+            };
+            response.put("message", message);
+            return ResponseEntity.ok(response);
+
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Job not found");
         }

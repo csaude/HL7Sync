@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -69,18 +70,26 @@ public class LocationServiceImpl implements LocationService {
 
     @Cacheable("provinceByUuid")
     public Location findByUuid(String uuid) {
-
-        return webClient.get()
-                .uri("/location/{uuid}?v={reprensentation}", uuid, REPRESENTATION)
-                .retrieve()
-                .bodyToMono(Location.class)
-                .onErrorMap(SocketTimeoutException.class,
-                        e -> new AppException("hl7.fetch.location.error.timeout", e))
-                .onErrorMap(ConnectException.class,
-                        e -> new AppException("hl7.fetch.location.error.connect", e))
-                .onErrorMap(IOException.class,
-                        e -> new AppException("hl7.fetch.location.error", e))
-                .block();
-
+        try {
+            return webClient.get()
+                    .uri("/location/{uuid}?v={representation}", uuid, REPRESENTATION)
+                    .retrieve()
+                    .bodyToMono(Location.class)
+                    .onErrorMap(SocketTimeoutException.class,
+                            e -> new AppException("hl7.fetch.location.error.timeout", e))
+                    .onErrorMap(ConnectException.class,
+                            e -> new AppException("hl7.fetch.location.error.connect", e))
+                    .onErrorMap(IOException.class,
+                            e -> new AppException("hl7.fetch.location.error", e))
+                    .block();
+        } catch (WebClientResponseException.NotFound e) {
+            return null;
+        } catch (WebClientResponseException e) {
+            // Handle other HTTP errors
+            throw new AppException("hl7.fetch.location.error.http", e);
+        } catch (Exception e) {
+            // Handle unexpected errors
+            throw new AppException("hl7.fetch.location.error", e);
+        }
     }
 }
