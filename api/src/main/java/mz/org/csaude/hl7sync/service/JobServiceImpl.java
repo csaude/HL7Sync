@@ -1,6 +1,6 @@
 package mz.org.csaude.hl7sync.service;
 
-import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
+import mz.org.csaude.hl7sync.dao.JobRepositoryDao;
 import mz.org.csaude.hl7sync.model.Job;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
