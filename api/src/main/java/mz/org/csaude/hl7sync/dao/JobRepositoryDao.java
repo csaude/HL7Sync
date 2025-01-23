@@ -1,4 +1,4 @@
-package mz.org.csaude.hl7sync.dao.jobrepository;
+package mz.org.csaude.hl7sync.dao;
 
 import mz.org.csaude.hl7sync.model.Job;
 import org.springframework.data.jpa.repository.JpaRepository;

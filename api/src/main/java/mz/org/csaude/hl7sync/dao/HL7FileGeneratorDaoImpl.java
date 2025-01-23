@@ -1,7 +1,8 @@
-package mz.org.csaude.hl7sync.dao.hl7filegenerator;
+package mz.org.csaude.hl7sync.dao;
 
 import java.util.List;
 
+import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
 import mz.org.csaude.hl7sync.model.PatientDemographic;
 import mz.org.csaude.hl7sync.util.Hl7Util;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public class HL7FileGeneratorDaoImpl implements HL7FileGeneratorDao {
 
     @Autowired
-    @Qualifier("openmrsJdbcTemplate")
     private JdbcTemplate jdbcTemplate;
 
     private String sql;

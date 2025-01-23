@@ -1,8 +1,7 @@
 package mz.org.csaude.hl7sync.controller;
 
 import ca.uhn.hl7v2.HL7Exception;
-import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
-import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
+import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
 import mz.org.csaude.hl7sync.model.HL7FileRequest;
 import mz.org.csaude.hl7sync.model.Job;
 import mz.org.csaude.hl7sync.model.Location;

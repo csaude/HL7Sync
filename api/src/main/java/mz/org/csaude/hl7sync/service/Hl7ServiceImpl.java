@@ -14,8 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
 import mz.org.csaude.hl7sync.AppException;
 import mz.org.csaude.hl7sync.ProcessingException;
-import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
-import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
+import mz.org.csaude.hl7sync.dao.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.dao.JobRepositoryDao;
 import mz.org.csaude.hl7sync.generator.AdtMessageFactory;
 import mz.org.csaude.hl7sync.model.*;
 import mz.org.csaude.hl7sync.util.Hl7Util;
@@ -38,7 +38,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -206,10 +205,6 @@ public class Hl7ServiceImpl implements Hl7Service {
 			job.setStatus(Job.JobStatus.COMPLETED);
 			job.setUpdatedAt(LocalDateTime.now());
 			jobRepositoryDao.save(job);
-
-			if (true) {
-				throw new IOException("Simulated IOException for testing");
-			}
 
 		} catch (IOException | RuntimeException e) {
 			// Handle exceptions and update status to FAILED
