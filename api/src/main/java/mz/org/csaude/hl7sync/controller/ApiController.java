@@ -54,30 +54,40 @@ public class ApiController {
         Optional<Job> existingJob = jobService.findByLocationUUIDAndStatuses(
                 locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
         );
-
+        // Return existing job ID if a job is in progress
         if (existingJob.isPresent()) {
-            // Return existing job ID if a job is in progress
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "Processing");
-            response.put("message", "Job already in progress. JobID: " + existingJob.get().getJobId());
-            return ResponseEntity.ok(response);
+            return buildErrorResponse("Processing", "Job already in progress. JobID: " + existingJob.get().getJobId());
         }
 
-        //Check if the locationUUID provided exists
+        // Check if the locationUUID provided exists
         Location province = locationService.findByUuid(locationUUID);
         if (province == null) {
-            // Return an error message
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "Location not found");
-            response.put("message", "Unable to find the provided locationUUID");
-            return ResponseEntity.ok(response);
+            return buildErrorResponse("Location not found", "Unable to find the provided locationUUID");
+        }
+
+        // Check if the province has child locations (districts)
+        List<Location> childLocations = province.getChildLocations();
+        if (childLocations == null || childLocations.isEmpty()) {
+            return buildErrorResponse("District not found", "No child locations (districts) found for the provided locationUUID");
+        }
+
+        // Retrieve the first district
+        Location district = childLocations.get(0);
+        if (district == null) {
+            return buildErrorResponse("District not found", "Unable to find a valid district in the child locations");
+        }
+
+        // Check if there are health facilities
+        List<Location> healthFacilities = province.getChildLocations(); // Assuming same child locations
+        if (healthFacilities == null || healthFacilities.isEmpty()) {
+            return buildErrorResponse("Health facilities not found", "Unable to find any health facility for the provided locationUUID");
         }
 
         // Create a new HL7 File Request
         HL7FileRequest req = new HL7FileRequest();
         req.setProvince(province);
-        req.setDistrict(province.getChildLocations().get(0));
-        req.setHealthFacilities(province.getChildLocations());
+        req.setDistrict(district);
+        req.setHealthFacilities(healthFacilities);
 
         // Create a new job
         String jobId = UUID.randomUUID().toString();
@@ -88,18 +98,11 @@ public class ApiController {
         newJob.setCreatedAt(LocalDateTime.now());
         newJob.setUpdatedAt(LocalDateTime.now());
         jobService.save(newJob);
-        LOG.info(jobId);
-
         hl7Service.generateHl7File(req, jobId);
 
-        // Prepare the response
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "Processing");
-        response.put("message", "HL7 file is being generated");
-        response.put("JobId", jobId);
+        LOG.info("Job Created: {}", jobId);
 
-        // Return a 200 OK status with the response body
-        return ResponseEntity.ok(response);
+        return buildSuccessResponse("Processing", "HL7 file is being generated", Map.of("JobId", jobId));
     }
 
     @GetMapping("/download/{jobId}")
@@ -117,7 +120,6 @@ public class ApiController {
 
         // Retrieve the file
         Path filePath = Paths.get(hl7FolderName).resolve(hl7FileName + jobId + HL7_EXTENSION);
-
         try {
             Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists()) {
@@ -130,6 +132,7 @@ public class ApiController {
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE) // Set MIME type
                     .body(resource);
         } catch (Exception e) {
+            LOG.error("Error retrieving file for JobID {}: {}", jobId, e.getMessage());
             return ResponseEntity.internalServerError().body("Error retrieving the file: " + e.getMessage());
         }
     }
@@ -159,6 +162,18 @@ public class ApiController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Job not found");
         }
+    }
+
+    // Helper method to create response maps
+    private ResponseEntity<Map<String, Object>> buildErrorResponse(String status, String message) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("status", status, "message", message));
+    }
+
+    private ResponseEntity<Map<String, Object>> buildSuccessResponse(String status, String message, Map<String, Object> additionalData) {
+        Map<String, Object> response = new HashMap<>(additionalData);
+        response.put("status", status);
+        response.put("message", message);
+        return ResponseEntity.ok(response);
     }
 
 
