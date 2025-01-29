@@ -34,7 +34,7 @@ public class EncryptedEnvironmentLoader
         HL7EncryptionServiceImpl encryptionService = new HL7EncryptionServiceImpl();
         EncryptedPropertySourceLoader loader = new EncryptedPropertySourceLoader(hl7KeyStoreService, encryptionService);
 
-        Resource path = new ClassPathResource("application.properties.enc");
+        Resource path = new ClassPathResource("application.properties");
         PropertySource<?> propertySource = loadEncryptedProperties(loader, path);
 
         environment.getPropertySources().addFirst(propertySource);
