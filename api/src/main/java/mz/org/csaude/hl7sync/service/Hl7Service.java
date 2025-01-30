@@ -1,10 +1,7 @@
 package mz.org.csaude.hl7sync.service;
 
 
-import mz.org.csaude.hl7sync.model.HL7File;
-import mz.org.csaude.hl7sync.model.HL7FileRequest;
-import mz.org.csaude.hl7sync.model.PatientDemographic;
-import mz.org.csaude.hl7sync.model.ProcessingResult;
+import mz.org.csaude.hl7sync.model.*;
 
 import ca.uhn.hl7v2.HL7Exception;
 import java.util.List;
@@ -16,7 +13,7 @@ public interface Hl7Service {
      * @return The generated HL7 file.
      * @throws HL7Exception
      */
-    public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest fileRequest, String jobId);
+    public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest fileRequest, Job newJob);
 
     /**
      * @return The generated HL7 file, could be processing.

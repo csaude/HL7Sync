@@ -34,7 +34,10 @@ public class Job {
     private LocalDateTime updatedAt;
 
     @Column(name = "error_details", nullable = true)
-    private String errorDetails; // New field for storing error details
+    private String errorDetails;
+
+    @Column(name = "download_url", nullable = false)
+    private String downloadURL;
 
 }
 
