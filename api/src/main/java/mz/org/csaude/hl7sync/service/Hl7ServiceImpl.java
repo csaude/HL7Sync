@@ -158,10 +158,10 @@ public class Hl7ServiceImpl implements Hl7Service {
 
 	@Async
 	@Override
-	public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest hl7FileRequest, String jobId) {
+	public CompletableFuture<ProcessingResult> generateHl7File(HL7FileRequest hl7FileRequest, Job newJob) {
 
-		Job job = jobRepositoryDao.findByJobId(jobId)
-				.orElseThrow(() -> new IllegalStateException("Job not found for jobId: " + jobId));
+		Job job = jobRepositoryDao.findByJobId(newJob.getJobId())
+				.orElseThrow(() -> new IllegalStateException("Job not found for jobId: " + newJob.getJobId()));
 
 		// Update status to PROCESSING
 		job.setStatus(Job.JobStatus.PROCESSING);
@@ -174,7 +174,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 		}
 
 
-		Path filePath = Paths.get(hl7FolderName).resolve(hl7FileName+ jobId + HL7_EXTENSION);
+		Path filePath = Paths.get(newJob.getDownloadURL());
 
 		try {
 
@@ -186,7 +186,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 			hl7File.setProvince(hl7FileRequest.getProvince());
 			hl7File.setDistrict(hl7FileRequest.getDistrict());
 			hl7File.setHealthFacilities(hl7FileRequest.getHealthFacilities());
-			hl7File.setLastModifiedTime(getFileLastModifiedTime(jobId));
+			hl7File.setLastModifiedTime(getFileLastModifiedTime(newJob.getDownloadURL()));
 
 			// Serialize the HL7File object
 			Path serializePath = Paths.get(hl7FolderName, METADATA_JSON);
@@ -378,9 +378,9 @@ public class Hl7ServiceImpl implements Hl7Service {
 		return errorLogs;
 	}
 
-	private LocalDateTime getFileLastModifiedTime(String jobId) {
+	private LocalDateTime getFileLastModifiedTime(String downloadUrl) {
 		try {
-			Path path = Paths.get(hl7FolderName, hl7FileName + jobId + HL7_EXTENSION);
+			Path path = Paths.get(downloadUrl);
 			BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
 			return attrs.lastModifiedTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 		} catch (IOException e) {

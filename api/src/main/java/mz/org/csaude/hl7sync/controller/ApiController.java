@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequestMapping("/api/demographics/")
@@ -97,8 +98,13 @@ public class ApiController {
         newJob.setStatus(Job.JobStatus.QUEUED);
         newJob.setCreatedAt(LocalDateTime.now());
         newJob.setUpdatedAt(LocalDateTime.now());
+
+        // Generate timestamp
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
+        String timestamp = LocalDateTime.now().format(formatter);
+        newJob.setDownloadURL(hl7FolderName + hl7FileName+ "_" +district.getName()+ "_"+ timestamp + HL7_EXTENSION);
         jobService.save(newJob);
-        hl7Service.generateHl7File(req, jobId);
+        hl7Service.generateHl7File(req, newJob);
 
         LOG.info("Job Created: {}", jobId);
 
@@ -118,8 +124,16 @@ public class ApiController {
             return ResponseEntity.badRequest().body("The job is still being processed!");
         }
 
-        // Retrieve the file
-        Path filePath = Paths.get(hl7FolderName).resolve(hl7FileName + jobId + HL7_EXTENSION);
+        // Use the stored download URL
+        String downloadUrl = job.getDownloadURL();
+        if (downloadUrl == null || downloadUrl.isEmpty()) {
+            return ResponseEntity.internalServerError().body("Download URL is not available for this job.");
+        }
+
+        // Convert the stored path string to a Path object
+        Path filePath = Paths.get(downloadUrl);
+        System.out.println(filePath);
+
         try {
             Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists()) {
