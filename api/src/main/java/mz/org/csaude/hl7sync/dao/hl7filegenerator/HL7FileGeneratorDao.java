@@ -1,4 +1,4 @@
-package mz.org.csaude.hl7sync.dao;
+package mz.org.csaude.hl7sync.dao.hl7filegenerator;
 
 import mz.org.csaude.hl7sync.model.PatientDemographic;
 
