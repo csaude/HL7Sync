@@ -1,0 +1,1 @@
+ALTER TABLE jobs ADD COLUMN download_url VARCHAR(255) NULL;
