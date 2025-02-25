@@ -1,0 +1,268 @@
+Index: api/src/main/java/mz/org/csaude/hl7sync/controller/ApiController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/api/src/main/java/mz/org/csaude/hl7sync/controller/ApiController.java b/api/src/main/java/mz/org/csaude/hl7sync/controller/ApiController.java
+--- a/api/src/main/java/mz/org/csaude/hl7sync/controller/ApiController.java	
++++ b/api/src/main/java/mz/org/csaude/hl7sync/controller/ApiController.java	(date 1736332196320)
+@@ -3,7 +3,6 @@
+ 
+ import ca.uhn.hl7v2.HL7Exception;
+ import mz.org.csaude.hl7sync.model.HL7FileRequest;
+-import mz.org.csaude.hl7sync.model.Location;
+ import mz.org.csaude.hl7sync.service.Hl7Service;
+ import mz.org.csaude.hl7sync.service.LocationService;
+ import org.slf4j.Logger;
+@@ -13,7 +12,6 @@
+ import org.springframework.web.bind.annotation.RestController;
+ 
+ import java.io.IOException;
+-import java.util.List;
+ 
+ @RestController
+ @RequestMapping("/api")
+@@ -30,28 +28,15 @@
+     }
+     @GetMapping("/demographics/generate")
+     public void createHL7Request() throws HL7Exception, IOException {
+-        System.out.println("Starting");
+-
+-        List<Location> allProvinces = locationService.findAllProvinces();
+-
+-        Location province = allProvinces.get(0);
+-
+         HL7FileRequest req = new HL7FileRequest();
+-
+-        req.setProvince(province);
+-
+-//        System.out.println(locationService.findByUuid("9b94c91a-904f-4038-89c2-f967a7f1476e"));
+-
+-//        req.setDistrict(locationService.findByUuid("9b94c91a-904f-4038-89c2-f967a7f1476e").getChildLocations().get(0));
+-        req.setDistrict(province.getChildLocations().get(0));
+-
+-        System.out.println("Starting 3");
+-
+-//        req.setHealthFacilities(locationService.findByUuid("9b94c91a-904f-4038-89c2-f967a7f1476e").getChildLocations());
+-        req.setHealthFacilities(province.getChildLocations());
+-
++        req.setProvince(locationService.findByUuid("b637a1f8-21a6-4b75-8a66-73626903deab"));
++        System.out.println(req.getProvince());
++        req.setDistrict(locationService.findByUuid("b637a1f8-21a6-4b75-8a66-73626903deab").getChildLocations().get(0));
++       System.out.println(req.getDistrict());
++        req.setHealthFacilities(locationService.findByUuid("b637a1f8-21a6-4b75-8a66-73626903deab").getChildLocations());
++        System.out.println(req.getHealthFacilities());
+         hl7Service.generateHl7File(req);
+-        System.out.println("Done");
++       System.out.println("Done");
+         // ConfigController.previousHl7FileForm = hl7FileForm;
+ 
+         LOG.info("File generated");
+Index: api/src/main/java/mz/org/csaude/hl7sync/service/Hl7ServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/api/src/main/java/mz/org/csaude/hl7sync/service/Hl7ServiceImpl.java b/api/src/main/java/mz/org/csaude/hl7sync/service/Hl7ServiceImpl.java
+--- a/api/src/main/java/mz/org/csaude/hl7sync/service/Hl7ServiceImpl.java	
++++ b/api/src/main/java/mz/org/csaude/hl7sync/service/Hl7ServiceImpl.java	(date 1736332196324)
+@@ -24,8 +24,6 @@
+ import mz.org.csaude.hl7sync.util.Hl7Util;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+-import org.springframework.beans.factory.annotation.Autowired;
+-import org.springframework.beans.factory.annotation.Qualifier;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.scheduling.annotation.Async;
+ import org.springframework.stereotype.Service;
+@@ -61,7 +59,6 @@
+ 
+ 	private static final Logger log = LoggerFactory.getLogger(Hl7ServiceImpl.class.getName());
+ 
+-
+ 	private HL7EncryptionService encryptionService;
+ 
+ 	private HL7FileGeneratorDao hl7FileGeneratorDao;
+@@ -101,11 +98,9 @@
+ 	@PostConstruct
+ 	public void init() throws IOException, ClassNotFoundException {
+ 		Path path = Paths.get(hl7FolderName);
+-		System.out.println(path);
+ 
+ 		// Create HL7 folder if it does not exist
+ 		if (!Files.exists(path)) {
+-			log.info("In here");
+ 			try {
+ 				Files.createDirectories(path);
+ 				log.info("Created folder {}", hl7FolderName);
+@@ -120,7 +115,6 @@
+ 		// If there is a previously processed file, delete the temporary file because
+ 		// the previous execution did not finish.
+ 		if (Files.exists(done)) {
+-			log.info("We are here 2");
+ 			// load serialized HL7File
+ 			HL7File hl7File = new HL7File();
+ 			Path serializePath = Paths.get(hl7FolderName, METADATA_JSON);
+Index: api/src/main/java/mz/org/csaude/hl7sync/service/LocationServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/api/src/main/java/mz/org/csaude/hl7sync/service/LocationServiceImpl.java b/api/src/main/java/mz/org/csaude/hl7sync/service/LocationServiceImpl.java
+--- a/api/src/main/java/mz/org/csaude/hl7sync/service/LocationServiceImpl.java	
++++ b/api/src/main/java/mz/org/csaude/hl7sync/service/LocationServiceImpl.java	(date 1736332196324)
+@@ -70,9 +70,6 @@
+     @Cacheable("provinceByUuid")
+     public Location findByUuid(String uuid) {
+ 
+-//        String url = "/location/{uuid}?v={representation}";
+-//        System.out.println("Accessing URL: " + url.replace("{uuid}", uuid).replace("{representation}", REPRESENTATION));
+-
+         return webClient.get()
+                 .uri("/location/{uuid}?v={reprensentation}", uuid, REPRESENTATION)
+                 .retrieve()
+Index: api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedEnvironmentLoader.java
+===================================================================
+diff --git a/api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedEnvironmentLoader.java b/api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedEnvironmentLoader.java
+deleted file mode 100644
+--- a/api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedEnvironmentLoader.java	
++++ /dev/null	
+@@ -1,52 +0,0 @@
+-package mz.org.csaude.hl7sync.env;
+-
+-
+-import mz.org.csaude.hl7.lib.service.HL7EncryptionServiceImpl;
+-import mz.org.csaude.hl7.lib.service.HL7KeyStoreService;
+-import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+-import org.springframework.context.ApplicationListener;
+-import org.springframework.core.env.ConfigurableEnvironment;
+-import org.springframework.core.env.PropertySource;
+-import org.springframework.core.io.ClassPathResource;
+-import org.springframework.core.io.Resource;
+-import org.springframework.util.Assert;
+-
+-import java.io.IOException;
+-
+-public class EncryptedEnvironmentLoader
+-        implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
+-
+-    @Override
+-    public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
+-
+-        ConfigurableEnvironment environment = event.getEnvironment();
+-
+-        String keyStorePath = environment.getProperty("app.keyStore");
+-        if (keyStorePath == null) {
+-            throw new IllegalArgumentException("app.keyStore is missing.");
+-        }
+-
+-        String keyStorePassword = environment.getProperty("app.keyStore.password");
+-        if (keyStorePassword == null) {
+-            throw new IllegalArgumentException("app.keyStore.password is missing.");
+-        }
+-
+-        HL7KeyStoreService hl7KeyStoreService = new HL7KeyStoreService(keyStorePath, keyStorePassword);
+-        HL7EncryptionServiceImpl encryptionService = new HL7EncryptionServiceImpl();
+-        EncryptedPropertySourceLoader loader = new EncryptedPropertySourceLoader(hl7KeyStoreService, encryptionService);
+-
+-        Resource path = new ClassPathResource("application.properties.enc");
+-        PropertySource<?> propertySource = loadEncryptedProperties(loader, path);
+-
+-        environment.getPropertySources().addFirst(propertySource);
+-    }
+-
+-    private PropertySource<?> loadEncryptedProperties(EncryptedPropertySourceLoader loader, Resource path) {
+-        Assert.isTrue(path.exists(), () -> "Resource " + path + " does not exist");
+-        try {
+-            return loader.load("custom-resource", path).get(0);
+-        } catch (IOException ex) {
+-            throw new IllegalStateException("Failed to load configuration from " + path, ex);
+-        }
+-    }
+-}
+Index: api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedPropertySourceLoader.java
+===================================================================
+diff --git a/api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedPropertySourceLoader.java b/api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedPropertySourceLoader.java
+deleted file mode 100644
+--- a/api/src/main/java/mz/org/csaude/hl7sync/env/EncryptedPropertySourceLoader.java	
++++ /dev/null	
+@@ -1,51 +0,0 @@
+-package mz.org.csaude.hl7sync.env;
+-
+-
+-import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
+-import mz.org.csaude.hl7.lib.service.HL7KeyStoreService;
+-import org.springframework.boot.env.PropertySourceLoader;
+-import org.springframework.core.env.PropertiesPropertySource;
+-import org.springframework.core.env.PropertySource;
+-import org.springframework.core.io.Resource;
+-
+-import java.io.BufferedReader;
+-import java.io.IOException;
+-import java.io.InputStream;
+-import java.io.InputStreamReader;
+-import java.util.Collections;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Properties;
+-
+-import static mz.org.csaude.hl7.lib.Constants.C_SAUDE_SECRET_KEY_ALIAS;
+-import static mz.org.csaude.hl7.lib.Constants.DISA_SECRET_KEY_ALIAS;
+-
+-public class EncryptedPropertySourceLoader implements PropertySourceLoader {
+-
+-    private HL7KeyStoreService hl7KeyStoreService;
+-
+-    private HL7EncryptionService encryptionService;
+-
+-    public EncryptedPropertySourceLoader(HL7KeyStoreService keyStoreService, HL7EncryptionService encryptionService) {
+-        this.hl7KeyStoreService = keyStoreService;
+-        this.encryptionService = encryptionService;
+-    }
+-
+-    @Override
+-    public String[] getFileExtensions() {
+-        return new String[] { "enc" };
+-    }
+-
+-    @Override
+-    public List<PropertySource<?>> load(String name, Resource resource) throws IOException {
+-        Map<String, byte[]> entries = hl7KeyStoreService.getEntries();
+-        String csaudeSecretKey = new String(entries.get(C_SAUDE_SECRET_KEY_ALIAS));
+-        InputStream decryptedProperties = encryptionService.decrypt(resource.getFile().toPath(), csaudeSecretKey);
+-        try (BufferedReader input = new BufferedReader(new InputStreamReader(decryptedProperties))) {
+-            Properties props = new Properties();
+-            props.load(input);
+-            props.setProperty("app.disa.secretKey", new String(entries.get(DISA_SECRET_KEY_ALIAS)));
+-            return Collections.singletonList(new PropertiesPropertySource("decrypted-props", props));
+-        }
+-    }
+-}
+Index: api/src/main/java/mz/org/csaude/hl7sync/config/HL7SyncConfig.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/api/src/main/java/mz/org/csaude/hl7sync/config/HL7SyncConfig.java b/api/src/main/java/mz/org/csaude/hl7sync/config/HL7SyncConfig.java
+--- a/api/src/main/java/mz/org/csaude/hl7sync/config/HL7SyncConfig.java	
++++ b/api/src/main/java/mz/org/csaude/hl7sync/config/HL7SyncConfig.java	(date 1736332196320)
+@@ -1,7 +1,5 @@
+ package mz.org.csaude.hl7sync.config;
+ 
+-import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
+-import mz.org.csaude.hl7.lib.service.HL7EncryptionServiceImpl;
+ import org.springframework.cache.annotation.EnableCaching;
+ import org.springframework.context.MessageSource;
+ import org.springframework.context.annotation.Bean;
+@@ -26,10 +24,7 @@
+         messageSource.setDefaultEncoding("UTF-8");
+         return messageSource;
+     }
+-    @Bean
+-    public HL7EncryptionService hl7EncryptionService() {
+-        return new HL7EncryptionServiceImpl();
+-    }
++
+     @Bean
+     public LocalValidatorFactoryBean validator() {
+         LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
