@@ -9,9 +9,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "jobs")
 public class Job {
-    public enum JobStatus {
-        QUEUED, PROCESSING, COMPLETED, FAILED
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,31 +1,40 @@
 package mz.org.csaude.hl7sync.controller;
 
-import ca.uhn.hl7v2.HL7Exception;
-import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
-import mz.org.csaude.hl7sync.model.HL7FileRequest;
-import mz.org.csaude.hl7sync.model.Job;
-import mz.org.csaude.hl7sync.model.Location;
-import mz.org.csaude.hl7sync.service.Hl7Service;
-import mz.org.csaude.hl7sync.service.JobService;
-import mz.org.csaude.hl7sync.service.LocationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import ca.uhn.hl7v2.HL7Exception;
+import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.model.HL7FileRequest;
+import mz.org.csaude.hl7sync.model.Job;
+import mz.org.csaude.hl7sync.model.JobStatus;
+import mz.org.csaude.hl7sync.model.Location;
+import mz.org.csaude.hl7sync.service.Hl7Service;
+import mz.org.csaude.hl7sync.service.JobService;
+import mz.org.csaude.hl7sync.service.LocationService;
 
 @RestController
 @RequestMapping("/api/demographics/")
@@ -52,8 +61,7 @@ public class ApiController {
     @PostMapping("/generate/{locationUUID}")
     public ResponseEntity<?> createHL7Request(@PathVariable String locationUUID) throws HL7Exception, IOException {
         // Check if there's an ongoing job for this location
-        Optional<Job> existingJob = jobService.findByLocationUUIDAndStatuses(
-                locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
+        Optional<Job> existingJob = jobService.findByLocationUUIDAndStatuses(locationUUID, List.of(JobStatus.QUEUED, JobStatus.PROCESSING)
         );
         // Return existing job ID if a job is in progress
         if (existingJob.isPresent()) {
@@ -95,7 +103,7 @@ public class ApiController {
         Job newJob = new Job();
         newJob.setJobId(jobId);
         newJob.setLocationUUID(locationUUID);
-        newJob.setStatus(Job.JobStatus.QUEUED);
+        newJob.setStatus(JobStatus.QUEUED);
         newJob.setCreatedAt(LocalDateTime.now());
         newJob.setUpdatedAt(LocalDateTime.now());
 
@@ -120,7 +128,7 @@ public class ApiController {
         }
 
         Job job = jobOptional.get();
-        if (!job.getStatus().equals(Job.JobStatus.COMPLETED)) {
+        if (!job.getStatus().equals(JobStatus.COMPLETED)) {
             return ResponseEntity.badRequest().body("The job is still being processed!");
         }
 

@@ -1,12 +1,14 @@
 package mz.org.csaude.hl7sync.service;
 
-import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
-import mz.org.csaude.hl7sync.model.Job;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
+import mz.org.csaude.hl7sync.model.Job;
+import mz.org.csaude.hl7sync.model.JobStatus;
 
 @Service
 public class JobServiceImpl implements JobService{
@@ -24,7 +26,7 @@ public class JobServiceImpl implements JobService{
     }
 
     @Override
-    public Optional<Job> findByLocationUUIDAndStatuses(String locationUUID, List<Job.JobStatus> statuses) {
+    public Optional<Job> findByLocationUUIDAndStatuses(String locationUUID, List<JobStatus> statuses) {
         return jobRepositoryDao.findByLocationUUIDAndStatusIn(locationUUID, statuses);
     }
 
