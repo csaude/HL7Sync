@@ -3,6 +3,7 @@ package mz.org.csaude.hl7sync.controller;
 import ca.uhn.hl7v2.HL7Exception;
 import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
 import mz.org.csaude.hl7sync.model.HL7FileRequest;
+import mz.org.csaude.hl7sync.model.Hl7FileForm;
 import mz.org.csaude.hl7sync.model.Job;
 import mz.org.csaude.hl7sync.model.Location;
 import mz.org.csaude.hl7sync.service.Hl7Service;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -49,52 +51,57 @@ public class ApiController {
         this.hl7FileName = fileName;
     }
 
-    @PostMapping("/generate/{locationUUID}")
-    public ResponseEntity<?> createHL7Request(@PathVariable String locationUUID) throws HL7Exception, IOException {
+    @PostMapping("/generate")
+    public ResponseEntity<?> createHL7Request(@RequestBody Hl7FileForm hl7FileForm) throws HL7Exception, IOException {
+
+        System.out.println(hl7FileForm);
+        System.out.println("DONE");
         // Check if there's an ongoing job for this location
-        Optional<Job> existingJob = jobService.findByLocationUUIDAndStatuses(
-                locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
-        );
+//        Optional<Job> existingJob = jobService.findByLocationUUIDAndStatuses(
+//                hl7FileForm.locationUUID, List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
+//        );
+
+
         // Return existing job ID if a job is in progress
-        if (existingJob.isPresent()) {
-            return buildErrorResponse("Processing", "Job already in progress. JobID: " + existingJob.get().getJobId());
-        }
-
-        // Check if the locationUUID provided exists
-        Location province = locationService.findByUuid(locationUUID);
-        if (province == null) {
-            return buildErrorResponse("Location not found", "Unable to find the provided locationUUID");
-        }
-
-        // Check if the province has child locations (districts)
-        List<Location> childLocations = province.getChildLocations();
-        if (childLocations == null || childLocations.isEmpty()) {
-            return buildErrorResponse("District not found", "No child locations (districts) found for the provided locationUUID");
-        }
-
-        // Retrieve the first district
-        Location district = childLocations.get(0);
-        if (district == null) {
-            return buildErrorResponse("District not found", "Unable to find a valid district in the child locations");
-        }
-
-        // Check if there are health facilities
-        List<Location> healthFacilities = province.getChildLocations(); // Assuming same child locations
-        if (healthFacilities == null || healthFacilities.isEmpty()) {
-            return buildErrorResponse("Health facilities not found", "Unable to find any health facility for the provided locationUUID");
-        }
+//        if (existingJob.isPresent()) {
+//            return buildErrorResponse("Processing", "Job already in progress. JobID: " + existingJob.get().getJobId());
+//        }
+//
+//        // Check if the locationUUID provided exists
+//        Location province = locationService.findByUuid(locationUUID);
+//        if (province == null) {
+//            return buildErrorResponse("Location not found", "Unable to find the provided locationUUID");
+//        }
+//
+//        // Check if the province has child locations (districts)
+//        List<Location> childLocations = province.getChildLocations();
+//        if (childLocations == null || childLocations.isEmpty()) {
+//            return buildErrorResponse("District not found", "No child locations (districts) found for the provided locationUUID");
+//        }
+//
+//        // Retrieve the first district
+//        Location district = childLocations.get(0);
+//        if (district == null) {
+//            return buildErrorResponse("District not found", "Unable to find a valid district in the child locations");
+//        }
+//
+//        // Check if there are health facilities
+//        List<Location> healthFacilities = province.getChildLocations(); // Assuming same child locations
+//        if (healthFacilities == null || healthFacilities.isEmpty()) {
+//            return buildErrorResponse("Health facilities not found", "Unable to find any health facility for the provided locationUUID");
+//        }
 
         // Create a new HL7 File Request
         HL7FileRequest req = new HL7FileRequest();
-        req.setProvince(province);
-        req.setDistrict(district);
-        req.setHealthFacilities(healthFacilities);
+        req.setProvince(hl7FileForm.getProvince());
+        req.setDistrict(hl7FileForm.getDistrict());
+        req.setHealthFacilities(hl7FileForm.getHealthFacilities());
 
         // Create a new job
         String jobId = UUID.randomUUID().toString();
         Job newJob = new Job();
         newJob.setJobId(jobId);
-        newJob.setLocationUUID(locationUUID);
+        newJob.setLocationUUID("7311e455-de89-11e8-a2e5-0242ac120003");
         newJob.setStatus(Job.JobStatus.QUEUED);
         newJob.setCreatedAt(LocalDateTime.now());
         newJob.setUpdatedAt(LocalDateTime.now());
@@ -102,8 +109,9 @@ public class ApiController {
         // Generate timestamp
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
         String timestamp = LocalDateTime.now().format(formatter);
-        newJob.setDownloadURL(hl7FolderName + hl7FileName+ "_" +district.getName()+ "_"+ timestamp + HL7_EXTENSION);
+        newJob.setDownloadURL(hl7FolderName + hl7FileName+ "_" +hl7FileForm.getDistrict().getName()+ "_"+ timestamp + HL7_EXTENSION);
         jobService.save(newJob);
+
         hl7Service.generateHl7File(req, newJob);
 
         LOG.info("Job Created: {}", jobId);
