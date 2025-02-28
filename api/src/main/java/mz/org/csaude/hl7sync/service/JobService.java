@@ -8,7 +8,7 @@ import java.util.Optional;
 public interface JobService {
     Optional<Job> findJobById(String jobId);
 
-    Optional<Job> findByLocationUUIDAndStatuses(String locationUUID, List<Job.JobStatus> statuses);
+    List<Job> findByLocationUUIDAndStatuses(String locationUUID, List<Job.JobStatus> statuses);
 
     Job save(Job job);
 }

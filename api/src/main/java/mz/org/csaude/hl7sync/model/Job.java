@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -38,6 +39,9 @@ public class Job {
 
     @Column(name = "download_url", nullable = false)
     private String downloadURL;
+
+    @Column(name = "healthFacilities", nullable = false)
+    private String healthFacilities;
 
 }
 
