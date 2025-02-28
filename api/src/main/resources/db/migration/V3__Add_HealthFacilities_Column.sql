@@ -1,0 +1,1 @@
+ALTER TABLE jobs ADD COLUMN healthFacilities VARCHAR(255) NULL;

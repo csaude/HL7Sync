@@ -24,7 +24,7 @@ public class JobServiceImpl implements JobService{
     }
 
     @Override
-    public Optional<Job> findByLocationUUIDAndStatuses(String locationUUID, List<Job.JobStatus> statuses) {
+    public List <Job> findByLocationUUIDAndStatuses(String locationUUID, List<Job.JobStatus> statuses) {
         return jobRepositoryDao.findByLocationUUIDAndStatusIn(locationUUID, statuses);
     }
 
