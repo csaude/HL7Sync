@@ -125,7 +125,7 @@ public class ApiController {
 
         LOG.info("Job Created: {}", jobId);
 
-        return buildSuccessResponse("Processing", "HL7 file is being generated", Map.of("JobId", "jobId"));
+        return buildSuccessResponse("Processing", "HL7 file is being generated", Map.of("JobId", jobId));
     }
 
     @GetMapping("/download/{jobId}")
@@ -174,6 +174,7 @@ public class ApiController {
 
     @GetMapping("/status/{jobId}")
     public ResponseEntity<?> getJobStatus(@PathVariable String jobId) {
+
         Optional<Job> job = jobService.findJobById(jobId);
         if (job.isPresent()) {
             Job foundJob = job.get();
