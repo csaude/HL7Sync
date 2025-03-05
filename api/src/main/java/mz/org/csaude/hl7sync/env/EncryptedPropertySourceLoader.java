@@ -34,7 +34,7 @@ public class EncryptedPropertySourceLoader implements PropertySourceLoader {
 
     @Override
     public String[] getFileExtensions() {
-        return new String[] { "enc" };
+        return new String[] { "properties", "enc" };
     }
 
     @Override
@@ -47,6 +47,18 @@ public class EncryptedPropertySourceLoader implements PropertySourceLoader {
             props.load(input);
             props.setProperty("app.disa.secretKey", new String(entries.get(DISA_SECRET_KEY_ALIAS)));
             return Collections.singletonList(new PropertiesPropertySource("decrypted-props", props));
+        }
+    }
+
+    public List<PropertySource<?>> loadPlainProperties(String name, Resource resource) throws IOException {
+        try (InputStream inputStream = resource.getInputStream()) {
+            Properties props = new Properties();
+            props.load(inputStream);
+            // Optional: Add any additional processing for non-encrypted properties
+            Map<String, byte[]> entries = hl7KeyStoreService.getEntries();
+            props.setProperty("app.disa.secretKey", new String(entries.get(DISA_SECRET_KEY_ALIAS)));
+
+            return Collections.singletonList(new PropertiesPropertySource(name, props));
         }
     }
 }
