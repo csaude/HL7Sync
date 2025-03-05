@@ -43,7 +43,7 @@ public class EncryptedEnvironmentLoader
     private PropertySource<?> loadEncryptedProperties(EncryptedPropertySourceLoader loader, Resource path) {
         Assert.isTrue(path.exists(), () -> "Resource " + path + " does not exist");
         try {
-            return loader.load("custom-resource", path).get(0);
+            return loader.loadPlainProperties("custom-resource", path).get(0);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to load configuration from " + path, ex);
         }
