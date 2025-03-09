@@ -12,6 +12,7 @@ import mz.org.csaude.hl7sync.service.LocationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +24,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import java.io.ByteArrayOutputStream;
@@ -42,6 +46,7 @@ import org.springframework.util.StreamUtils;
 public class ApiController {
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private static final String HL7_EXTENSION = ".hl7.enc";
+    private static final String METADATA_JSON = ".metadata.json";
     private Hl7Service hl7Service;
     private HL7FileGeneratorDao hl7FileGeneratorDao;
     private LocationService locationService;
@@ -66,7 +71,6 @@ public class ApiController {
         List<Job> existingJob = jobService.findByLocationUUIDAndStatuses(
                 hl7FileForm.getDistrict().getUuid(), List.of(Job.JobStatus.QUEUED, Job.JobStatus.PROCESSING)
         );
-
 
         //Return existing job ID if a job is in progress
         if (!existingJob.isEmpty()) {
@@ -117,7 +121,8 @@ public class ApiController {
 
         // Generate timestamp
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
-        String timestamp = LocalDateTime.now().format(formatter);
+        String timestamp = newJob.getCreatedAt().format(formatter);
+
         newJob.setDownloadURL(hl7FolderName + hl7FileName+ "_" +hl7FileForm.getDistrict().getName()+ "_"+ timestamp + HL7_EXTENSION);
         jobService.save(newJob);
 
@@ -150,24 +155,73 @@ public class ApiController {
         // Convert the stored path string to a Path object
         Path filePath = Paths.get(downloadUrl);
 
-        try {
-            // Get the resource
-            Resource resource = new UrlResource(filePath.toUri());
+        // Regex pattern to extract district and full timestamp
+        String districtWithTimestamp = "";
+        Pattern pattern = Pattern.compile("Patient_Demographic_Data_([A-Za-z]+_\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2}_\\d{2})");
+        Matcher matcher = pattern.matcher(downloadUrl);
 
-            if (!resource.exists()) {
-                return ResponseEntity.notFound().build();
+        if (matcher.find()) {
+            districtWithTimestamp = matcher.group(1);  // Extracts, for example, "Milange_2025_03_09_11_40_53"
+        } else {
+            LOG.info("District with timestamp not found");
+        }
+
+        LOG.info("Extracted: " + districtWithTimestamp);
+
+        Path metadataPath = Paths.get(hl7FolderName, districtWithTimestamp + METADATA_JSON);
+
+        try {
+            // Create a temporary ZIP file
+            Path zipPath = Files.createTempFile("patient-data-", ".zip");
+
+            try (ZipOutputStream zipOut = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+                // Add HL7 file to the ZIP
+                Resource hl7Resource = new UrlResource(filePath.toUri());
+                if (!hl7Resource.exists()) {
+                    return ResponseEntity.notFound().build();
+                }
+
+                // Add HL7 file entry
+                ZipEntry hl7Entry = new ZipEntry("Patient_Demographic_Data.hl7.enc");
+                zipOut.putNextEntry(hl7Entry);
+                try (InputStream in = hl7Resource.getInputStream()) {
+                    byte[] buffer = new byte[8192];
+                    int len;
+                    while ((len = in.read(buffer)) > 0) {
+                        zipOut.write(buffer, 0, len);
+                    }
+                }
+                zipOut.closeEntry();
+
+                // Add metadata file to the ZIP if it exists
+                if (Files.exists(metadataPath)) {
+                    ZipEntry metadataEntry = new ZipEntry(".metadata.json");
+                    zipOut.putNextEntry(metadataEntry);
+                    try (InputStream in = Files.newInputStream(metadataPath)) {
+                        byte[] buffer = new byte[8192];
+                        int len;
+                        while ((len = in.read(buffer)) > 0) {
+                            zipOut.write(buffer, 0, len);
+                        }
+                    }
+                    zipOut.closeEntry();
+                } else {
+                    LOG.warn("Metadata file not found at: {}", metadataPath);
+                }
             }
 
-            // Serve the file as a downloadable resource with custom filename
+            // Serve the ZIP file
+            Resource zipResource = new FileSystemResource(zipPath);
+
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=Patient_Demographic_Data.hl7.enc")
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
-                    .body(resource);
+                            "attachment; filename=patient_data_package.zip")
+                    .header(HttpHeaders.CONTENT_TYPE, "application/zip")
+                    .body(zipResource);
 
         } catch (Exception e) {
-            LOG.error("Error retrieving file for JobID {}: {}", jobId, e.getMessage());
-            return ResponseEntity.internalServerError().body("Error retrieving the file: " + e.getMessage());
+            LOG.error("Error creating ZIP package for JobID {}: {}", jobId, e.getMessage());
+            return ResponseEntity.internalServerError().body("Error retrieving the files: " + e.getMessage());
         }
     }
 
