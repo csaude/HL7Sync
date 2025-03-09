@@ -1,0 +1,48 @@
+spring.application.name=hl7sync
+
+# Primary Database Configuration (hl7sync-db)
+spring.datasource.jdbcUrl=${DB_URL}
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.hibernate.ddl-auto=update
+spring.flyway.enabled=true
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+
+# Secondary Database Configuration (openmrs-db)
+openmrs.datasource.jdbc-url=${OPENMRS_DB}
+openmrs.datasource.username=${DB_USERNAME}
+openmrs.datasource.password=${DB_PASSWORD}
+openmrs.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+#Openmrs Credentials
+openmrs.url=${OPENMRS_URL}
+openmrs.username=${OPENMRS_USERNAME}
+openmrs.password=${OPENMRS_PASSWORD}
+
+#File Configurations
+app.hl7.folder=/tmp/
+app.hl7.filename=Patient_Demographic_Data
+app.hl7.hidden.filename=.Hidden.Patient_Demographic_Data
+
+#Secret Keys
+app.disa.secretKey=
+app.csaude.secretKey=
+
+app.username=
+app.password=
+
+
+spring.jpa.show-sql=true
+
+server.port=8081
+
+# Logging Configuration
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+
+#Server-Side Compression
+server.compression.enabled=true
+server.compression.mime-types=application/octet-stream
+server.compression.min-response-size=512

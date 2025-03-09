@@ -37,6 +37,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -189,7 +190,11 @@ public class Hl7ServiceImpl implements Hl7Service {
 			hl7File.setLastModifiedTime(getFileLastModifiedTime(newJob.getDownloadURL()));
 
 			// Serialize the HL7File object
-			Path serializePath = Paths.get(hl7FolderName, METADATA_JSON);
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
+			String timestamp = newJob.getCreatedAt().format(formatter);
+
+
+			Path serializePath = Paths.get(hl7FolderName, hl7File.getDistrict().getName()+ "_"+ timestamp + METADATA_JSON);
 			Files.deleteIfExists(serializePath);
 			objectMapper.writeValue(new File(serializePath.toString()), hl7File);
 
