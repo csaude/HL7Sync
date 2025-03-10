@@ -1,13 +1,19 @@
 package mz.org.csaude.hl7sync.dao.hl7filegenerator;
 
+import java.util.Collections;
 import java.util.List;
 
 import mz.org.csaude.hl7sync.model.PatientDemographic;
+import mz.org.csaude.hl7sync.service.Hl7ServiceImpl;
 import mz.org.csaude.hl7sync.util.Hl7Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+
+import static java.rmi.server.LogStream.log;
 
 
 @Repository
@@ -18,8 +24,16 @@ public class HL7FileGeneratorDaoImpl implements HL7FileGeneratorDao {
 
     private String sql;
 
+    private static final Logger log = LoggerFactory.getLogger(HL7FileGeneratorDaoImpl.class.getName());
+
     public List<PatientDemographic> getPatientDemographicData(List<String> locationsByUuid) {
 
+        if (locationsByUuid == null || locationsByUuid.isEmpty()) {
+            log.warn("No locations provided for patient demographic query");
+            return Collections.emptyList();
+        }
+
+        try {
         sql = "SELECT"
                 + "    REPLACE(REPLACE(pid.identifier, '\r', ''), '\n', ' ') pid,"
                 + "    pe.gender,"
@@ -225,6 +239,20 @@ public class HL7FileGeneratorDaoImpl implements HL7FileGeneratorDao {
                 + " GROUP BY"
                 + "    pid.identifier;";
 
-        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(PatientDemographic.class));
+            log.info("Executing SQL query with locations: {}", locationsByUuid);
+            // You might want to log just a part of the SQL if it's too long
+            log.debug("SQL Query: {}", sql.substring(0, Math.min(sql.length(), 500)) + "...");
+
+            List<PatientDemographic> results = jdbcTemplate.query(
+                    sql,
+                    new BeanPropertyRowMapper<>(PatientDemographic.class)
+            );
+
+            log.info("Query executed successfully. Retrieved {} patient records", results.size());
+            return results;
+        } catch (Exception e) {
+            log.error("Error executing patient demographic query", e);
+            throw new RuntimeException("Failed to execute patient demographic query", e);
+        }
     }
 }

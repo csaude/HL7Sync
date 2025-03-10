@@ -329,33 +329,51 @@ public class Hl7ServiceImpl implements Hl7Service {
 				+ "DEFAULT_LOCATION_NAME" + "|DISA*LAB|SGP|" + currentTimeStamp + "||||00010223\r";
 
 		// create and write the HL7 message to file
-		log.info("Fetching patient demographics.");
-		List<PatientDemographic> patientDemographics = hl7FileGeneratorDao.getPatientDemographicData(locationsByUuid);
+		log.info("Fetching patient demographics from locations: {}", locationsByUuid);
+		List<PatientDemographic> patientDemographics;
+		try {
+			patientDemographics = hl7FileGeneratorDao.getPatientDemographicData(locationsByUuid);
+			log.info("Done fetching patient demographics. Found {} records", patientDemographics.size());
+
+			if (patientDemographics.isEmpty()) {
+				log.warn("No patient demographics found for the specified locations!");
+			} else {
+				log.debug("First patient info: {}", patientDemographics.get(0));
+			}
+		} catch (Exception e) {
+			log.error("Error fetching patient demographics", e);
+			throw new RuntimeException("Failed to fetch patient demographics", e);
+		}
+
 		PipeParser pipeParser = new PipeParser();
 		pipeParser.getParserConfiguration();
-		log.info("Done fetching patient demographics.");
 
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-
 			log.info("Serializing message...");
-
 			byteArrayOutputStream.write(headers.getBytes());
 
 			// we encrypt patient at a time
 			List<String> errorLogs = processDemographics(patientDemographics, pipeParser, byteArrayOutputStream);
+			log.info("Processed {} patients with {} errors", patientDemographics.size(), errorLogs.size());
 
 			String footers = "BTS|" + String.valueOf(patientDemographics.size()) + "\rFTS|1";
-
 			byteArrayOutputStream.write(footers.getBytes());
 
-			encryptionService.encrypt(byteArrayOutputStream, passPhrase, filePath);
+			try {
+				encryptionService.encrypt(byteArrayOutputStream, passPhrase, filePath);
+				log.info("File encrypted successfully: {}", filePath);
 
-			// Create a copy of the encrypted file with a hidden filename
-			Path destinationPath = filePath.resolveSibling(".Hidden." + filePath.getFileName().toString());
-			Files.copy(filePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
-			Files.setAttribute(destinationPath, "dos:hidden", true);
+				// Create a copy of the encrypted file with a hidden filename
+				Path destinationPath = filePath.resolveSibling(".Hidden." + filePath.getFileName().toString());
+				Files.copy(filePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+				Files.setAttribute(destinationPath, "dos:hidden", true);
+				log.info("Hidden copy created: {}", destinationPath);
 
-			log.info("Message serialized to file {} successfully", filePath);
+				log.info("Message serialized to file {} successfully", filePath);
+			} catch (Exception e) {
+				log.error("Error during encryption or file operations", e);
+				throw new RuntimeException("Failed during encryption or file operations", e);
+			}
 
 			return errorLogs;
 		}
