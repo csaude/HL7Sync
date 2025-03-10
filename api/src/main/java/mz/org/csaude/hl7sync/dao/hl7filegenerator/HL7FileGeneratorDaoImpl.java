@@ -240,6 +240,7 @@ public class HL7FileGeneratorDaoImpl implements HL7FileGeneratorDao {
                 + "    pid.identifier;";
 
             log.info("Executing SQL query with locations: {}", locationsByUuid);
+            log.info("Query: {}", sql);
             // You might want to log just a part of the SQL if it's too long
             log.debug("SQL Query: {}", sql.substring(0, Math.min(sql.length(), 500)) + "...");
 
