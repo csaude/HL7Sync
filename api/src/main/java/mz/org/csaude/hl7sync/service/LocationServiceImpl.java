@@ -70,6 +70,8 @@ public class LocationServiceImpl implements LocationService {
 
     @Cacheable("provinceByUuid")
     public Location findByUuid(String uuid) {
+    	System.out.println("findByUuid called...");
+    	System.out.println("uuid for the selected site..." + uuid); 
         try {
             return webClient.get()
                     .uri("/location/{uuid}?v={representation}", uuid, REPRESENTATION)
