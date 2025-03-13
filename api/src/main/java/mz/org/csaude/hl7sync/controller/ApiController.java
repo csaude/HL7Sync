@@ -1,5 +1,39 @@
 package mz.org.csaude.hl7sync.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import ca.uhn.hl7v2.HL7Exception;
 import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
 import mz.org.csaude.hl7sync.model.HL7FileRequest;
@@ -9,42 +43,11 @@ import mz.org.csaude.hl7sync.model.Location;
 import mz.org.csaude.hl7sync.service.Hl7Service;
 import mz.org.csaude.hl7sync.service.JobService;
 import mz.org.csaude.hl7sync.service.LocationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.time.format.DateTimeFormatter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import java.io.ByteArrayOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.util.StreamUtils;
 
 @RestController
 @RequestMapping("/api/demographics/")
 public class ApiController {
-    private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
+    private static final Logger log = LoggerFactory.getLogger(ApiController.class);
     private static final String HL7_EXTENSION = ".hl7.enc";
     private static final String METADATA_JSON = ".metadata.json";
     private Hl7Service hl7Service;
@@ -77,6 +80,9 @@ public class ApiController {
             return buildErrorResponse("Processing", "Job already in progress. JobID: " + existingJob.get(0).getJobId());
         }
 
+        log.info("HERE IS THE UUID");
+        log.info(hl7FileForm.getProvince().getUuid());
+        
         // Check if the locationUUID provided exists
         Location province = locationService.findByUuid(hl7FileForm.getProvince().getUuid());
         if (province == null) {
@@ -128,7 +134,7 @@ public class ApiController {
 
         hl7Service.generateHl7File(req, newJob);
 
-        LOG.info("Job Created: {}", jobId);
+        log.info("Job Created: {}", jobId);
 
         return buildSuccessResponse("Processing", "HL7 file is being generated", Map.of("JobId", jobId));
     }
@@ -163,10 +169,10 @@ public class ApiController {
         if (matcher.find()) {
             districtWithTimestamp = matcher.group(1);  // Extracts, for example, "Milange_2025_03_09_11_40_53"
         } else {
-            LOG.info("District with timestamp not found");
+            log.info("District with timestamp not found");
         }
 
-        LOG.info("Extracted: " + districtWithTimestamp);
+        log.info("Extracted: " + districtWithTimestamp);
 
         Path metadataPath = Paths.get(hl7FolderName, districtWithTimestamp + METADATA_JSON);
 
@@ -206,7 +212,7 @@ public class ApiController {
                     }
                     zipOut.closeEntry();
                 } else {
-                    LOG.warn("Metadata file not found at: {}", metadataPath);
+                	log.warn("Metadata file not found at: {}", metadataPath);
                 }
             }
 
@@ -220,7 +226,7 @@ public class ApiController {
                     .body(zipResource);
 
         } catch (Exception e) {
-            LOG.error("Error creating ZIP package for JobID {}: {}", jobId, e.getMessage());
+            log.error("Error creating ZIP package for JobID {}: {}", jobId, e.getMessage());
             return ResponseEntity.internalServerError().body("Error retrieving the files: " + e.getMessage());
         }
     }
@@ -263,7 +269,11 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(jobs);
+        // Get only the last 5 jobs
+        int startIndex = Math.max(0, jobs.size() - 5);
+        List<Job> lastFiveJobs = jobs.subList(startIndex, jobs.size());
+
+        return ResponseEntity.ok(lastFiveJobs);
     }
 
     // Helper method to create response maps

@@ -75,6 +75,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Cacheable("provinceByUuid")
     public Location findByUuid(String uuid) {
+    	
         // Construct the full URI
         String uri = "/location/{uuid}?v={representation}";
         String fullUri = UriComponentsBuilder.fromUriString(uri)

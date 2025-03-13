@@ -1,31 +1,5 @@
 package mz.org.csaude.hl7sync.service;
 
-import ca.uhn.hl7v2.HL7Exception;
-import ca.uhn.hl7v2.model.DataTypeException;
-import ca.uhn.hl7v2.model.Message;
-import ca.uhn.hl7v2.model.v251.message.ADT_A24;
-import ca.uhn.hl7v2.model.v251.segment.PID;
-import ca.uhn.hl7v2.model.v251.segment.PV1;
-import ca.uhn.hl7v2.parser.PipeParser;
-import ca.uhn.hl7v2.util.Hl7InputStreamMessageIterator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-
-import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
-import mz.org.csaude.hl7sync.AppException;
-import mz.org.csaude.hl7sync.ProcessingException;
-import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
-import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
-import mz.org.csaude.hl7sync.generator.AdtMessageFactory;
-import mz.org.csaude.hl7sync.model.*;
-import mz.org.csaude.hl7sync.util.Hl7Util;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +18,38 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import ca.uhn.hl7v2.HL7Exception;
+import ca.uhn.hl7v2.model.DataTypeException;
+import ca.uhn.hl7v2.model.Message;
+import ca.uhn.hl7v2.model.v251.message.ADT_A24;
+import ca.uhn.hl7v2.model.v251.segment.PID;
+import ca.uhn.hl7v2.model.v251.segment.PV1;
+import ca.uhn.hl7v2.parser.PipeParser;
+import ca.uhn.hl7v2.util.Hl7InputStreamMessageIterator;
+import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
+import mz.org.csaude.hl7sync.AppException;
+import mz.org.csaude.hl7sync.ProcessingException;
+import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
+import mz.org.csaude.hl7sync.generator.AdtMessageFactory;
+import mz.org.csaude.hl7sync.model.HL7File;
+import mz.org.csaude.hl7sync.model.HL7FileRequest;
+import mz.org.csaude.hl7sync.model.Job;
+import mz.org.csaude.hl7sync.model.Location;
+import mz.org.csaude.hl7sync.model.PatientDemographic;
+import mz.org.csaude.hl7sync.model.ProcessingResult;
+import mz.org.csaude.hl7sync.util.Hl7Util;
 
 @Service
 public class Hl7ServiceImpl implements Hl7Service {
@@ -329,34 +335,52 @@ public class Hl7ServiceImpl implements Hl7Service {
 				+ "DEFAULT_LOCATION_NAME" + "|DISA*LAB|SGP|" + currentTimeStamp + "||||00010223\r";
 
 		// create and write the HL7 message to file
-		log.info("Fetching patient demographics.");
-		List<PatientDemographic> patientDemographics = hl7FileGeneratorDao.getPatientDemographicData(locationsByUuid);
+		log.info("Fetching patient demographics from locations: {}", locationsByUuid);
+		List<PatientDemographic> patientDemographics;
+		try {
+			patientDemographics = hl7FileGeneratorDao.getPatientDemographicData(locationsByUuid);
+			log.info("Done fetching patient demographics. Found {} records", patientDemographics.size());
+
+			if (patientDemographics.isEmpty()) {
+				log.warn("No patient demographics found for the specified locations!");
+			} else {
+				log.debug("First patient info: {}", patientDemographics.get(0));
+			}
+		} catch (Exception e) {
+			log.error("Error fetching patient demographics", e);
+			throw new RuntimeException("Failed to fetch patient demographics", e);
+		}
+
 		PipeParser pipeParser = new PipeParser();
 		pipeParser.getParserConfiguration();
-		log.info("Done fetching patient demographics.");
 
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-
 			log.info("Serializing message...");
-
 			byteArrayOutputStream.write(headers.getBytes());
 
 			// we encrypt patient at a time
 			List<String> errorLogs = processDemographics(patientDemographics, pipeParser, byteArrayOutputStream);
+			log.info("Processed {} patients with {} errors", patientDemographics.size(), errorLogs.size());
 
 			String footers = "BTS|" + String.valueOf(patientDemographics.size()) + "\rFTS|1";
-
 			byteArrayOutputStream.write(footers.getBytes());
 
-			encryptionService.encrypt(byteArrayOutputStream, passPhrase, filePath);
+			try {
+				encryptionService.encrypt(byteArrayOutputStream, passPhrase, filePath);
+				log.info("File encrypted successfully: {}", filePath);
 
-			// Create a copy of the encrypted file with a hidden filename
-			Path destinationPath = filePath.resolveSibling(".Hidden." + filePath.getFileName().toString());
-			Files.copy(filePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
-			Files.setAttribute(destinationPath, "dos:hidden", true);
+				// Create a copy of the encrypted file with a hidden filename
+				Path destinationPath = filePath.resolveSibling(".Hidden." + filePath.getFileName().toString());
+				Files.copy(filePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+				Files.setAttribute(destinationPath, "dos:hidden", true);
+				log.info("Hidden copy created: {}", destinationPath);
 
-			log.info("Message serialized to file {} successfully", filePath);
-
+				log.info("Message serialized to file {} successfully", filePath);
+			} catch (Exception e) {
+				log.error("Error during encryption or file operations", e);
+				throw new RuntimeException("Failed during encryption or file operations", e);
+			}
+			
 			return errorLogs;
 		}
 	}

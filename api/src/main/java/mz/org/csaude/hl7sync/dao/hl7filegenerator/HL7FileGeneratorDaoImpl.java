@@ -107,5 +107,6 @@ public class HL7FileGeneratorDaoImpl implements HL7FileGeneratorDao {
     	        + " GROUP BY pid.identifier;";
 
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(PatientDemographic.class));
+
     }
 }
