@@ -4,6 +4,8 @@ package mz.org.csaude.hl7sync.service;
 import mz.org.csaude.hl7sync.AppException;
 import mz.org.csaude.hl7sync.model.Location;
 import mz.org.csaude.hl7sync.model.LocationSearch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class LocationServiceImpl implements LocationService {
     private static final String PROVINCE_TAG = "Provincia";
 
     private static final String REPRESENTATION = "custom:(uuid,name,childLocations:(uuid,name,childLocations:(uuid,name)))";
+    private static final Logger log = LoggerFactory.getLogger(Hl7ServiceImpl.class.getName());
 
     private final WebClient webClient;
 
@@ -34,6 +37,9 @@ public class LocationServiceImpl implements LocationService {
             @Value("${openmrs.url}") String baseUrl,
             @Value("${openmrs.username}") String username,
             @Value("${openmrs.password}") String password) {
+
+        log.info(baseUrl);
+        log.info("HERE!");
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl)
                 .pathSegment("ws", "rest", "v1");
@@ -47,7 +53,6 @@ public class LocationServiceImpl implements LocationService {
 
     @Cacheable("allProvinces")
     public List<Location> findAllProvinces() {
-
         List<Location> locationList = webClient.get()
                 .uri("/location?tag={tag}&v={representation}", PROVINCE_TAG, REPRESENTATION)
                 .retrieve()
@@ -70,8 +75,15 @@ public class LocationServiceImpl implements LocationService {
 
     @Cacheable("provinceByUuid")
     public Location findByUuid(String uuid) {
-    	System.out.println("findByUuid called...");
-    	System.out.println("uuid for the selected site..." + uuid); 
+        // Construct the full URI
+        String uri = "/location/{uuid}?v={representation}";
+        String fullUri = UriComponentsBuilder.fromUriString(uri)
+                .buildAndExpand(uuid, REPRESENTATION)
+                .toUriString();
+
+        // Log the full URI
+        log.info("Requesting URI: {}", fullUri);
+
         try {
             return webClient.get()
                     .uri("/location/{uuid}?v={representation}", uuid, REPRESENTATION)
