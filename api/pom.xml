@@ -11,7 +11,7 @@
 
 	<groupId>mz.org.csaude</groupId>
 	<artifactId>api</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<name>api</name>
 	<description>Background sync for hl7 app</description>
 	<packaging>jar</packaging>
