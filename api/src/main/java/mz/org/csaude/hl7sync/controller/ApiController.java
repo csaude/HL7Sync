@@ -77,6 +77,8 @@ public class ApiController {
             return buildErrorResponse("Processing", "Job already in progress. JobID: " + existingJob.get(0).getJobId());
         }
 
+        LOG.info(hl7FileForm.getProvince().getUuid());
+        LOG.info("HERE IS THE UUID");
         // Check if the locationUUID provided exists
         Location province = locationService.findByUuid(hl7FileForm.getProvince().getUuid());
         if (province == null) {
@@ -263,7 +265,11 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(jobs);
+        // Get only the last 5 jobs
+        int startIndex = Math.max(0, jobs.size() - 5);
+        List<Job> lastFiveJobs = jobs.subList(startIndex, jobs.size());
+
+        return ResponseEntity.ok(lastFiveJobs);
     }
 
     // Helper method to create response maps
