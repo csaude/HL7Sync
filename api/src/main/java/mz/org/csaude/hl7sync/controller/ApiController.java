@@ -265,11 +265,11 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
 
-        // Get only the last 5 jobs
-        int startIndex = Math.max(0, jobs.size() - 5);
-        List<Job> lastFiveJobs = jobs.subList(startIndex, jobs.size());
+        // Get only the last 3 jobs
+        int startIndex = Math.max(0, jobs.size() - 3);
+        List<Job> lastJobs = jobs.subList(startIndex, jobs.size());
 
-        return ResponseEntity.ok(lastFiveJobs);
+        return ResponseEntity.ok(lastJobs);
     }
 
     // Helper method to create response maps
