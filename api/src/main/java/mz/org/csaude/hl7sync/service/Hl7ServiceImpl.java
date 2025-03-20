@@ -363,12 +363,6 @@ public class Hl7ServiceImpl implements Hl7Service {
 				encryptionService.encrypt(byteArrayOutputStream, passPhrase, filePath);
 				log.info("File encrypted successfully: {}", filePath);
 
-				// Create a copy of the encrypted file with a hidden filename
-				Path destinationPath = filePath.resolveSibling(".Hidden." + filePath.getFileName().toString());
-				Files.copy(filePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
-				Files.setAttribute(destinationPath, "dos:hidden", true);
-				log.info("Hidden copy created: {}", destinationPath);
-
 				log.info("Message serialized to file {} successfully", filePath);
 			} catch (Exception e) {
 				log.error("Error during encryption or file operations", e);
