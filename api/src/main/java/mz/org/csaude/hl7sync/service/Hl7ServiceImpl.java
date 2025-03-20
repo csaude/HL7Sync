@@ -362,7 +362,6 @@ public class Hl7ServiceImpl implements Hl7Service {
 			try {
 				encryptionService.encrypt(byteArrayOutputStream, passPhrase, filePath);
 				log.info("File encrypted successfully: {}", filePath);
-
 				log.info("Message serialized to file {} successfully", filePath);
 			} catch (Exception e) {
 				log.error("Error during encryption or file operations", e);
