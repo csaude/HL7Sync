@@ -1,31 +1,5 @@
 package mz.org.csaude.hl7sync.service;
 
-import ca.uhn.hl7v2.HL7Exception;
-import ca.uhn.hl7v2.model.DataTypeException;
-import ca.uhn.hl7v2.model.Message;
-import ca.uhn.hl7v2.model.v251.message.ADT_A24;
-import ca.uhn.hl7v2.model.v251.segment.PID;
-import ca.uhn.hl7v2.model.v251.segment.PV1;
-import ca.uhn.hl7v2.parser.PipeParser;
-import ca.uhn.hl7v2.util.Hl7InputStreamMessageIterator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-
-import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
-import mz.org.csaude.hl7sync.AppException;
-import mz.org.csaude.hl7sync.ProcessingException;
-import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
-import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
-import mz.org.csaude.hl7sync.generator.AdtMessageFactory;
-import mz.org.csaude.hl7sync.model.*;
-import mz.org.csaude.hl7sync.util.Hl7Util;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +18,38 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import ca.uhn.hl7v2.HL7Exception;
+import ca.uhn.hl7v2.model.DataTypeException;
+import ca.uhn.hl7v2.model.Message;
+import ca.uhn.hl7v2.model.v251.message.ADT_A24;
+import ca.uhn.hl7v2.model.v251.segment.PID;
+import ca.uhn.hl7v2.model.v251.segment.PV1;
+import ca.uhn.hl7v2.parser.PipeParser;
+import ca.uhn.hl7v2.util.Hl7InputStreamMessageIterator;
+import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
+import mz.org.csaude.hl7sync.AppException;
+import mz.org.csaude.hl7sync.ProcessingException;
+import mz.org.csaude.hl7sync.dao.hl7filegenerator.HL7FileGeneratorDao;
+import mz.org.csaude.hl7sync.dao.jobrepository.JobRepositoryDao;
+import mz.org.csaude.hl7sync.generator.AdtMessageFactory;
+import mz.org.csaude.hl7sync.model.HL7File;
+import mz.org.csaude.hl7sync.model.HL7FileRequest;
+import mz.org.csaude.hl7sync.model.Job;
+import mz.org.csaude.hl7sync.model.Location;
+import mz.org.csaude.hl7sync.model.PatientDemographic;
+import mz.org.csaude.hl7sync.model.ProcessingResult;
+import mz.org.csaude.hl7sync.util.Hl7Util;
 
 @Service
 public class Hl7ServiceImpl implements Hl7Service {
@@ -367,7 +373,7 @@ public class Hl7ServiceImpl implements Hl7Service {
 				log.error("Error during encryption or file operations", e);
 				throw new RuntimeException("Failed during encryption or file operations", e);
 			}
-
+			
 			return errorLogs;
 		}
 	}

@@ -1,0 +1,12 @@
+CREATE TABLE jobs (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    job_id VARCHAR(255) NOT NULL UNIQUE,
+    locationUUID VARCHAR(255) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT NULL,
+    error_details TEXT DEFAULT NULL,
+    download_url VARCHAR(255) NOT NULL,
+    healthFacilities VARCHAR(255) NULL,
+    PRIMARY KEY(id)
+);

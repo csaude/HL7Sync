@@ -1,9 +1,9 @@
 package mz.org.csaude.hl7sync;
 
-import mz.org.csaude.hl7sync.env.EncryptedEnvironmentLoader;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+
+import mz.org.csaude.hl7sync.env.EncryptedEnvironmentLoader;
 
 @SpringBootApplication
 public class Hl7syncApplication {

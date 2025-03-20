@@ -1,7 +1,7 @@
 package mz.org.csaude.hl7sync.config;
 
-import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
-import mz.org.csaude.hl7.lib.service.HL7EncryptionServiceImpl;
+import java.util.Locale;
+
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -9,11 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
-import java.util.Locale;
+import mz.org.csaude.hl7.lib.service.HL7EncryptionService;
+import mz.org.csaude.hl7.lib.service.HL7EncryptionServiceImpl;
 
 @Configuration
 @EnableAsync
