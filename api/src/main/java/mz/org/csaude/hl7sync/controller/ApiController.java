@@ -270,7 +270,7 @@ public class ApiController {
         }
 
         // Get only the last 3 jobs
-        int startIndex = Math.max(0, jobs.size() - 3);
+        int startIndex = Math.max(0, jobs.size() - 1);
         List<Job> lastJobs = jobs.subList(startIndex, jobs.size());
 
         return ResponseEntity.ok(lastJobs);
