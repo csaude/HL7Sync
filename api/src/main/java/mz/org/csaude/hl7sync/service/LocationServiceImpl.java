@@ -39,7 +39,6 @@ public class LocationServiceImpl implements LocationService {
             @Value("${openmrs.password}") String password) {
 
         log.info(baseUrl);
-        log.info("HERE!");
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl)
                 .pathSegment("ws", "rest", "v1");
