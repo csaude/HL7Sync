@@ -10,8 +10,7 @@ import java.util.Optional;
 @Repository
 public interface JobRepositoryDao extends JpaRepository<Job, Long> {
 
-    // Find a job by its location UUID and status
     List<Job> findByLocationUUIDAndStatusIn(String locationUUID, List<Job.JobStatus> statuses);
-    // Add this method to find a job by its jobId
     Optional<Job> findByJobId(String jobId);
+    List<Job> findByStatusIn(List<Job.JobStatus> statuses);
 }

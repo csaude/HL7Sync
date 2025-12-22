@@ -101,10 +101,8 @@ public class ApiController {
             return buildErrorResponse("District not found", "Unable to find a valid district in the child locations");
         }
 
-        // Check if there are health facilities
-        List<Location> healthFacilities = province.getChildLocations(); // Assuming same child locations
-        if (healthFacilities == null || healthFacilities.isEmpty()) {
-            return buildErrorResponse("Health facilities not found", "Unable to find any health facility for the provided locationUUID");
+        if (hl7FileForm.getHealthFacilities() == null || hl7FileForm.getHealthFacilities().isEmpty()) {
+            return buildErrorResponse("Facilities not found", "No health facilities were provided in the request");
         }
 
         // Create a new HL7 File Request
@@ -269,7 +267,7 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
 
-        // Get only the last 3 jobs
+        // Get only the last job
         int startIndex = Math.max(0, jobs.size() - 1);
         List<Job> lastJobs = jobs.subList(startIndex, jobs.size());
 

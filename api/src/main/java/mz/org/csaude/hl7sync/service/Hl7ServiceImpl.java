@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -55,8 +54,6 @@ import mz.org.csaude.hl7sync.util.Hl7Util;
 public class Hl7ServiceImpl implements Hl7Service {
 
 	private static final String METADATA_JSON = ".metadata.json";
-
-	private static final String PROCESSING_PREFIX = ".";
 
 	private static final String HL7_EXTENSION = ".hl7.enc";
 
@@ -115,35 +112,6 @@ public class Hl7ServiceImpl implements Hl7Service {
 				log.error(String.format("Could not create folder %s", hl7FolderName), e);
 			}
 		}
-
-
-		//TODO - Implement logic to handle deletion of files
-//		// Check if there is a previous processing file
-//		Path processing = Paths.get(path.toString(), PROCESSING_PREFIX + hl7FileName + HL7_EXTENSION);
-//		Path done = Paths.get(path.toString(), hl7FileName + HL7_EXTENSION);
-//		// If there is a previously processed file, delete the temporary file because
-//		// the previous execution did not finish.
-//		if (Files.exists(done)) {
-//			// load serialized HL7File
-//			HL7File hl7File = new HL7File();
-//			Path serializePath = Paths.get(hl7FolderName, METADATA_JSON);
-//			if (Files.exists(serializePath)) {
-//				hl7File = objectMapper.readValue(Files.newInputStream(serializePath), HL7File.class);
-//			} else {
-//				hl7File.setLastModifiedTime(getFileLastModifiedTime());
-//			}
-//			ProcessingResult result = new ProcessingResult();
-//			result.setHl7File(hl7File);
-//			result.setErrorLogs(Collections.emptyList());
-//			processingResult = CompletableFuture.completedFuture(result);
-//			previousProcessingResult = result;
-//			if (Files.exists(processing))
-//				Files.delete(processing);
-//		} else if (Files.exists(processing)) {
-//			Files.delete(processing);
-//			processingResult = new CompletableFuture<>();
-//			processingResult.completeExceptionally(new AppException("Previous HL7 file generation did not finish."));
-//		}
 	}
 
 	@Override
@@ -184,7 +152,6 @@ public class Hl7ServiceImpl implements Hl7Service {
 		Path filePath = Paths.get(newJob.getDownloadURL());
 
 		try {
-
 			processingResult = new CompletableFuture<>();
 
 			List<String> errorLogs = createHl7File(hl7FileRequest, filePath);
